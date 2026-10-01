@@ -17,6 +17,10 @@ web/dist/
 android/
 dist/
 
+# Cloudflare wrangler 的本地状态与 dry-run 输出
+.wrangler/
+.wrangler-dry/
+
 # 注意：web/public/data/dataset.json 是**故意提交**的静态数据快照。
 # GitHub Pages 上没有后端，线上构建直接用这份快照；本地更新数据后重跑 npm run export:static。
 

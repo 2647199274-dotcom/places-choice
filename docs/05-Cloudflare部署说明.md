@@ -119,7 +119,60 @@ curl.exe -s -o NUL -w "%{http_code}`n" https://places-choice.pages.dev/api/datas
 
 ---
 
-## 四、以后怎么更新
+## 三之二、如果你建成了 **Worker**（Workers + Static Assets）
+
+Cloudflare 现在把「从 Git 导入」做成了 **Worker** 流程：构建日志里会出现
+`Executing user deploy command: npx wrangler deploy`，拿到的域名是 `places-choice.<账号>.workers.dev`。
+**这不是错误**，CF 官方称这是目前推荐的新方式，对纯静态站来说和 Pages 功能一致。
+（作者实测记录：[静态站点迁移到 Cloudflare Workers](https://zhujiangtao.com/posts/migrate-static-site-to-cloudflare/)）
+
+### 需要的三处配置
+
+| 位置 | 值 |
+|---|---|
+| 仓库里的 `wrangler.jsonc`（**已提交**） | `assets.directory = "./web/dist"`，且**不设** `not_found_handling` |
+| 控制台 → 项目 → `Settings` → `Build` → `Build command` | `node scripts/verify-static-dataset.mjs && npm run build:web` |
+| 控制台 → 项目 → `Settings` → `Build` → `Output directory` | `web/dist`（CF 的 Vite 预设会默认填成 `dist`，**必须改**） |
+
+`Framework preset` 建议改成 `None`（选 Vite 会让它假设输出目录是根目录的 `dist`，与本仓库不符）。
+
+### 为什么 `wrangler.jsonc` 必不可少
+
+Worker 的部署命令是 `npx wrangler deploy`，它从**仓库里的 wrangler 配置**读静态资源目录；
+控制台里那个 `Output directory` 只是检测提示。仓库里没有配置文件时，
+wrangler 会因缺少 entry-point / assets 而部署失败。
+
+### 绝对不要设 `not_found_handling: "single-page-application"`
+
+官方文档明确：该选项会让**未命中的路径返回 `200 OK` + `index.html`**（见
+[Worker 静态资源路由文档](https://developers.cloudflare.com/workers/static-assets/routing/single-page-application/)）。
+而本项目前端判断"有没有后端"的方式正是**请求 `/api/dataset` 拿到 404**：
+
+```ts
+// web/src/api.ts
+const body = await res.json().catch(() => null);   // 200 + HTML → 这里返回 null，不抛错
+if (!res.ok) throw new Error(...);                 // 404 → 才抛错 → 回退读静态快照
+```
+
+所以 `"single-page-application"` 会让前端**静默误判成"在线"且拿不到数据**。
+`wrangler.jsonc` 里因此**不设**该字段（默认就是未命中返回 404，正是我们要的）。
+
+### ⚠️ `workers.dev` 在国内的可达性（重要）
+
+| 域名类型 | 国内实测反馈 |
+|---|---|
+| `*.workers.dev` | **不稳定**，存在 DNS 污染问题（[专门有文章讲这个](https://cloud.tencent.cn/developer/article/2133923)） |
+| `*.pages.dev` | **时好时坏** |
+| **绑定自定义域名** | **大多数时候可访问，150–300ms**（[实测](https://zhujiangtao.com/posts/migrate-static-site-to-cloudflare/)） |
+
+**结论：想要国内稳定，默认域名都不够用，需要一个自定义域名**（Cloudflare 走境外节点，**不需要备案**，
+域名本身约 ¥10–30/年）。
+绑定入口：控制台 → 项目 → `Settings` → **`Domains & Routes`** → `Add` → **`Custom domain`**。
+（前提是该域名的 NS 已托管在 Cloudflare；添加后它会自动建 Worker 类型的记录，**不要手动加 A/CNAME**。）
+
+如果不想买域名、又必须稳定可用 —— 直接走 **APK**（`docs/03-Android打包说明.md`），完全离线，不受网络影响。
+
+---
 
 ```powershell
 # 改完代码 / 更新数据后

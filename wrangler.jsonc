@@ -1,0 +1,25 @@
+{
+  // Cloudflare Workers（Workers + Static Assets）配置
+  //
+  // 为什么需要这个文件：Workers Builds 的部署命令是 `npx wrangler deploy`，
+  // 它必须从仓库里的 wrangler 配置读"静态资源目录"，控制台里那个 Output Directory
+  // 只是检测用的提示。没有这个文件时，wrangler 会报缺 entry-point / assets 而部署失败。
+  //
+  // 域名：部署后是 https://places-choice.<你的账号>.workers.dev
+  //       （国内可达性不稳定，绑自定义域名后明显改善，见 docs/05-Cloudflare部署说明.md）
+  "name": "places-choice",
+  "compatibility_date": "2025-09-01",
+
+  // 纯静态资源：把 Vite 的构建产物目录交给 Cloudflare 托管（相对仓库根目录）
+  "assets": {
+    "directory": "./web/dist"
+  }
+
+  // ⚠️ 故意**不设** not_found_handling：
+  //   默认行为是"未命中的路径返回 404"，这正是前端需要的 ——
+  //   前端靠请求 /api/dataset 拿到 404 才判断"没有后端"，然后回退读 data/dataset.json。
+  //   一旦设成 "single-page-application"，未命中路径会返回 **200 + index.html**，
+  //   而 web/src/api.ts 里 `res.json().catch(() => null)` 不会抛错 → 静默返回 null，
+  //   前端误判成"在线"并且拿不到数据（见交接稿第 6 节记过的同一个坑）。
+  //   "404-page" 也可以，但需要 dist 里有 404.html，本项目不需要。
+}
