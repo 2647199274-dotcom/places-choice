@@ -197,20 +197,48 @@ if (!res.ok) throw new Error(...);                 // 404 → 才抛错 → 回�
 
 | 检查 | 结果 | 说明 |
 |---|---|---|
-| DNS A 记录 | `128.242.245.212` | ❌ **不是 Cloudflare 的 IP**。ipinfo 显示归属 **AS203020 HostRoyale Technologies（西班牙马德里）** |
+| DNS A 记录 | `128.242.245.212` / `31.13.85.2` | ❌ **都不是 Cloudflare 的 IP**。前者 ipinfo 归属 AS203020 HostRoyale（西班牙），后者是 **Facebook/Meta 的段** |
+| 随机名字 `random-xyz123-test.workers.dev` | `75.126.164.178` | ❌ 换成任意名字都解析到假 IP，且每次不同 → **整段域名被投毒**，不是你这一个站点的问题 |
 | DNS AAAA 记录 | `2a03:2880:f102:183:face:b00c:0:25de` | ❌ `2a03:2880` 是 **Facebook 的 IPv6 段**，`face:b00c` 是典型投毒特征 |
-| TCP 443 | **超时** | 连不通，所以浏览器 `000` |
+| TCP 443 / HTTP | **超时 / `000`** | 连不通 |
 | 对照：`www.cloudflare.com` | `104.16.123.96` → **200** | ✅ **Cloudflare 真实节点是通的**，被污染的只是 `workers.dev` 这个域名 |
 
-**结论（重要）**：
+### ✅ 但 `pages.dev` 是通的（**同一时刻实测，8/8 全部可达**）
 
-1. **`*.workers.dev` 在国内基本不可用**，不是速度慢，是**解析就被投毒**，手机同样打不开。
-2. **绑自定义域名有救** —— Cloudflare 真实 IP 可达（实测 200），自定义域名解析到的是 `104.x`/`172.67.x` 这类anycast IP，
-   绕开了被污染的 `workers.dev`。这也是社区实测"自定义域名 150–300ms"的原因。
-   绑定入口：控制台 → 项目 → `Settings` → **`Domains & Routes`** → `Add` → **`Custom domain`**
-   （前提：该域名的 NS 已托管在 Cloudflare；添加后它会自动建 Worker 类型记录，**不要手动加 A/CNAME**）。
-   **不需要备案**（走境外节点）；域名本身约 ¥10–30/年。
-3. **如果不想买域名 —— 本项目实测 `github.io` 反而是能用的那个**（见下）。
+| 站点 | 解析到的 IP | HTTP |
+|---|---|---|
+| `cloudflare-docs-7ou.pages.dev` | `172.66.45.18` | **200** |
+| `remix.pages.dev` | `172.66.45.33` | **200** |
+| `vitepress.pages.dev` | `172.66.47.50` | **200** |
+| `astro.pages.dev` | `172.66.46.247` | **200** |
+| `hugo.pages.dev` | `172.66.44.209` | **200** |
+| `vue.pages.dev` | `172.66.45.34` | **200** |
+| `nuxt.pages.dev` | `172.66.44.153` | 404（Cloudflare 真实响应 = 通） |
+| `sveltekit.pages.dev` | `172.66.46.224` | 522（Cloudflare 真实响应 = 通） |
+
+`172.66.x.x` 是 **Cloudflare 的真实 anycast 段**。8 个站点全部拿到真实 HTTP 响应，
+说明 **`pages.dev` 没有被污染，国内可以访问**。
+
+### 结论与推荐路径
+
+| 需求 | 该怎么做 |
+|---|---|
+| **免费、国内能开、现在就要** | 建一个 **Pages 项目**（**不是 Worker**）→ 域名是 `places-choice.pages.dev` → 直接可用 |
+| 免费但要自动发布 | Pages + Git 集成（push 即部署），见第三节 |
+| 想继续用已建好的 Worker | 必须**绑自定义域名**（`workers.dev` 被污染，免费域名救不了）。Cloudflare 真实 IP 可达 → 绑了就能用。免备案，域名约 ¥10–30/年 |
+| 一分钱不花又最稳 | **GitHub Pages**（本机实测全绿）或 **APK**（完全离线） |
+
+### ❌ 换 Gitee 解决不了这个问题（重要）
+
+常见误解："把仓库传到 Gitee，再让 Cloudflare 从 Gitee 导入，是不是国内就能访问了？" **不行**，两个独立原因：
+
+1. **被墙的是最终域名，不是代码托管**。Cloudflare 从哪拉代码（GitHub / GitLab / 直传）跟站点域名无关 ——
+   站点仍然是 `places-choice.<账号>.workers.dev`，照样打不开。上面实测的随机名字都被投毒，就是最好的证明。
+2. **Cloudflare 不支持 Gitee**。官方文档原文：*"Cloudflare supports connecting Cloudflare Pages to your
+   **GitHub and GitLab** repositories"*，其它平台（如 Bitbucket）只能走 **Direct Upload + CI**
+   （[官方 Git 集成文档](https://developers.cloudflare.com/pages/configuration/git-integration/)）。
+
+另外 **Gitee 自己的 Pages 服务已停服**，也不能拿它当免费静态托管。
 
 ### 实测对照：GitHub Pages 在同一个网络下是可用的
 
@@ -231,6 +259,35 @@ DNS 解析到的是**真实 IP**（185.199.108-111.153），没有被污染。
 （环境差异很大，换运营商/换时间可能不同，所以两个地址都留着做备份。）
 
 ---
+
+## 三之四、最快路径：命令行直传一个 **Pages 项目**（推荐）
+
+既然实测 **`pages.dev` 国内可达、`workers.dev` 被投毒**，最省事的就是建一个 **Pages 项目**。
+命令行直传**不需要**走控制台的 Git 授权，也不受"Build command 字段是空的"那类坑影响：
+
+```powershell
+# 1) 首次：登录 Cloudflare（打开浏览器授权，只需一次）
+npx wrangler login
+
+# 2) 首次：创建 Pages 项目（只需一次）
+npm run cf:pages:init
+
+# 3) 发布：校验快照 → 构建 → 直传
+npm run deploy:cf-pages
+```
+
+成功后输出会给出地址：`https://places-choice.pages.dev`。
+
+> 想改成"push 即自动发布"：① 走第三节的 Git 集成（把 **Pages** 项目连到 GitHub 仓库，
+> `Framework preset` 选 `None`、构建命令 `npm run build:web`、输出目录 `web/dist`、环境变量 `NODE_VERSION=22`）；
+> ② 或加一个 GitHub Actions 工作流用 `wrangler pages deploy` 直传（需在仓库配 `CLOUDFLARE_API_TOKEN` 密钥）。
+>
+> **注意**：`wrangler.jsonc` 里的 `assets.directory` 是给 Worker 用的；Pages 直传时目录由命令参数指定，
+> 该文件不参与。万一 Pages 的 Git 构建因为读到它而报错，把它临时改名即可。
+
+---
+
+## 四、以后怎么更新
 
 ```powershell
 # 改完代码 / 更新数据后

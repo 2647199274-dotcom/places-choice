@@ -13,6 +13,8 @@
     "export:static": "node scripts/export-static-dataset.mjs",
     "verify:dataset": "node scripts/verify-static-dataset.mjs",
     "deploy:cf": "node scripts/verify-static-dataset.mjs && npm run build:web && npx --yes wrangler deploy",
+    "cf:pages:init": "npx --yes wrangler pages project create places-choice --production-branch main",
+    "deploy:cf-pages": "node scripts/verify-static-dataset.mjs && npm run build:web && npx --yes wrangler pages deploy web/dist --project-name places-choice --branch main",
     "dedupe": "node scripts/dedupe-seed.mjs",
     "icons": "node scripts/generate-icons.mjs",
     "serve:dist": "node scripts/serve-dist.mjs",
