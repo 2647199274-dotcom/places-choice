@@ -191,20 +191,44 @@ if (!res.ok) throw new Error(...);                 // 404 → 才抛错 → 回�
 所以 `"single-page-application"` 会让前端**静默误判成"在线"且拿不到数据**。
 `wrangler.jsonc` 里因此**不设**该字段（默认就是未命中返回 404，正是我们要的）。
 
-### ⚠️ `workers.dev` 在国内的可达性（重要）
+### ⚠️ `workers.dev` 在国内被 DNS 污染（**本机实测数据**）
 
-| 域名类型 | 国内实测反馈 |
-|---|---|
-| `*.workers.dev` | **不稳定**，存在 DNS 污染问题（[专门有文章讲这个](https://cloud.tencent.cn/developer/article/2133923)） |
-| `*.pages.dev` | **时好时坏** |
-| **绑定自定义域名** | **大多数时候可访问，150–300ms**（[实测](https://zhujiangtao.com/posts/migrate-static-site-to-cloudflare/)） |
+2026-10-01 部署成功后，在**本机（国内网络）**实测 `https://places-choice.2647199274.workers.dev`：
 
-**结论：想要国内稳定，默认域名都不够用，需要一个自定义域名**（Cloudflare 走境外节点，**不需要备案**，
-域名本身约 ¥10–30/年）。
-绑定入口：控制台 → 项目 → `Settings` → **`Domains & Routes`** → `Add` → **`Custom domain`**。
-（前提是该域名的 NS 已托管在 Cloudflare；添加后它会自动建 Worker 类型的记录，**不要手动加 A/CNAME**。）
+| 检查 | 结果 | 说明 |
+|---|---|---|
+| DNS A 记录 | `128.242.245.212` | ❌ **不是 Cloudflare 的 IP**。ipinfo 显示归属 **AS203020 HostRoyale Technologies（西班牙马德里）** |
+| DNS AAAA 记录 | `2a03:2880:f102:183:face:b00c:0:25de` | ❌ `2a03:2880` 是 **Facebook 的 IPv6 段**，`face:b00c` 是典型投毒特征 |
+| TCP 443 | **超时** | 连不通，所以浏览器 `000` |
+| 对照：`www.cloudflare.com` | `104.16.123.96` → **200** | ✅ **Cloudflare 真实节点是通的**，被污染的只是 `workers.dev` 这个域名 |
 
-如果不想买域名、又必须稳定可用 —— 直接走 **APK**（`docs/03-Android打包说明.md`），完全离线，不受网络影响。
+**结论（重要）**：
+
+1. **`*.workers.dev` 在国内基本不可用**，不是速度慢，是**解析就被投毒**，手机同样打不开。
+2. **绑自定义域名有救** —— Cloudflare 真实 IP 可达（实测 200），自定义域名解析到的是 `104.x`/`172.67.x` 这类anycast IP，
+   绕开了被污染的 `workers.dev`。这也是社区实测"自定义域名 150–300ms"的原因。
+   绑定入口：控制台 → 项目 → `Settings` → **`Domains & Routes`** → `Add` → **`Custom domain`**
+   （前提：该域名的 NS 已托管在 Cloudflare；添加后它会自动建 Worker 类型记录，**不要手动加 A/CNAME**）。
+   **不需要备案**（走境外节点）；域名本身约 ¥10–30/年。
+3. **如果不想买域名 —— 本项目实测 `github.io` 反而是能用的那个**（见下）。
+
+### 实测对照：GitHub Pages 在同一个网络下是可用的
+
+同一时刻、同一台机器实测 `https://2647199274-dotcom.github.io/places-choice/`：
+
+```
+/                      → 200
+/data/dataset.json     → 200，content-length = 6555435（完整 25820 条）
+/api/dataset           → 404  ✅（前端靠这个判断"没有后端"）
+/sw.js / manifest / icons → 全 200
+```
+
+DNS 解析到的是**真实 IP**（185.199.108-111.153），没有被污染。
+
+**所以：不要因为"听说 github.io 国内打不开"就急着换平台 —— 先用手机实测。**
+本项目这台机器/这条网络下，GitHub Pages 比 `workers.dev` 可用得多。
+
+（环境差异很大，换运营商/换时间可能不同，所以两个地址都留着做备份。）
 
 ---
 
