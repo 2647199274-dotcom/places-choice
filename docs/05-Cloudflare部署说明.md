@@ -32,12 +32,31 @@ GitHub Pages 在子路径 `/places-choice/` 下，所以 CI 里设了 `VITE_BASE
 **Cloudflare Pages 是根路径部署，设了反而白屏。** 在 CF 的环境变量里**留空或不填** `VITE_BASE`。
 （`web/vite.config.ts` 默认 `base: '/'`；Service Worker 用 `new URL('./')` 自适应，两种部署都兼容。）
 
-### 2. 千万不要加 `_redirects` / SPA 兜底
+### 2. ⚠️ **必须有顶层 `404.html`**（否则线上功能直接坏掉）
 
-前端判断"有没有后端"的方式是：请求 `/api/dataset` **失败**就回退读静态快照。
-如果加了 `/* /index.html 200` 这类兜底，`/api/dataset` 会返回 **200 + HTML**，前端会误判成"在线"，
-接着拿 HTML 当 JSON 解析 —— 这正是交接稿里记过的那个坑。
-本项目是单页应用、没有前端路由，**不需要任何 rewrite**。
+**这条是实测踩出来的，最容易漏。** Cloudflare Pages 官方行为（[Serving Pages 文档](https://developers.cloudflare.com/pages/platform/serving-pages/)原文）：
+
+> *"If your project does not include a top-level `404.html` file, Pages assumes that you are deploying a
+> single-page application... Pages' default single-page application behavior **matches all incoming paths to the root (`/`)**"*
+
+也就是说：**没有 `404.html` 时，任何未命中的路径都会返回 `200 OK` + `index.html`**。
+而前端正是靠 `/api/dataset` 返回 **404** 来判断"没有后端"：
+
+```ts
+// web/src/api.ts —— 200 + HTML 不会抛错！
+const body = await res.json().catch(() => null);   // HTML 解析失败 → null
+if (!res.ok) throw new Error(...);                 // 只有 404 才会走到这里
+```
+
+**实测事故**：本项目的 CF Pages 首次部署后，`/api/dataset` 返回 `200` + `Content-Type: text/html`。
+后果链：`api.dataset()` 静默返回 `null` → `App.tsx` 访问 `d.generatedAt` 抛 TypeError → 进 catch →
+**第一次打开的人只看到"连不上后端，且本地没有缓存数据"**，转盘完全用不了。
+
+**对策**：仓库里已有 `web/public/404.html`（独立最小页面，会被 Vite 原样放进 dist）。
+- 它是**功能性文件，不是装饰**，删了就会复现上面的事故；
+- `npm test` 里有一条断言专门盯着它（`npm run verify:dataset`），删掉会让测试变红；
+- **不要**用 `index.html` 复制成 `404.html`（那样 200 行为会照样复现）；
+- **不要**加 `_redirects` 做兜底 —— 本项目是单页应用、没有前端路由，不需要任何 rewrite。
 
 ### 3. 数据集必须已提交进仓库（CI 不会帮你导出）
 
@@ -48,6 +67,20 @@ CF 构建时**不会**生成 `web/public/data/dataset.json`，用的是仓库里
 
 Vite 7 要求 Node ≥ 20.19。仓库里已有 `.nvmrc`（内容 `22`），同时在 CF 控制台加一个环境变量
 `NODE_VERSION = 22` 双保险（CF 两者都认）。
+
+### 上线后一定要跑一次线上端到端检查
+
+本地的 `npm run test:web` **测不出**上面第 2 条那种坑（本地静态服务器会老老实实返回 404）。
+必须用真实浏览器打开**线上地址**验证：
+
+```powershell
+npm run test:live                                                    # 默认查 pages.dev
+npm run test:live -- https://2647199274-dotcom.github.io/places-choice/   # 查 GitHub Pages
+```
+
+它会检查：`/api/dataset` 是否 404、快照是否完整、界面徽标是否是"25820 个地点"、
+数据来源标识是不是"📦 静态数据"（而不是"🌐 在线"）、有没有出现"连不上后端"、
+控制台有没有真报错、并**真的转一次**确认本地抽签引擎可用。
 
 ---
 

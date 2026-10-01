@@ -42,9 +42,12 @@ jobs:
           VITE_BASE: /${{ github.event.repository.name }}/
         run: npm run build:web
 
-      # SPA 回退：GitHub Pages 没有 rewrite，用 404.html 兜住深链接
-      - name: SPA fallback
-        run: cp web/dist/index.html web/dist/404.html
+      # ⚠️ 这里**故意不再**把 index.html 复制成 404.html。
+      # 404.html 现在是 web/public/404.html（独立最小页面），会被 Vite 原样放进 dist。
+      # 为什么不能覆盖成 index.html：Cloudflare Pages 的规则是"没有顶层 404.html 就按单页应用处理，
+      # 把未命中路径全部回落成 200 + index.html"，而前端靠 /api/dataset 返回 **404** 来判断"没有后端"。
+      # 覆盖成 index.html 会让 200 行为在别的平台上复现（前端拿到 HTML 当 JSON，静默判成在线）。
+      # GitHub Pages 只要 404.html 存在就会返回 404 状态，不必替换内容。
 
       # 关掉 Jekyll，避免忽略下划线开头的资源
       - name: Disable Jekyll

@@ -103,3 +103,40 @@ if (problems.length) {
 }
 
 console.log('\n✅ 静态快照校验通过：规模、结构、与 meta.json 一致性均正常');
+
+/**
+ * 站点回落页（404.html）检查 —— 为什么必须有：
+ *
+ * 前端判断"有没有后端"的方式是**请求 /api/dataset 拿到 404**。
+ * 但 Cloudflare Pages 官方行为是：「如果项目里没有顶层 404.html，
+ * Pages 就假定你在部署单页应用，把**所有未命中的路径都按 `/` 处理**」
+ * —— 也就是 /api/dataset 会返回 **200 + index.html**。
+ * 而 web/src/api.ts 里 `res.json().catch(() => null)` 不会抛错，
+ * 于是 App.tsx 拿到 null、访问 d.generatedAt 抛 TypeError、走到 catch，
+ * 首次访问的用户只会看到"连不上后端，且本地没有缓存数据"。
+ *
+ * 实测事故：CF Pages 部署上线后 /api/dataset 返回 200（Content-Type: text/html）。
+ * 所以这个文件是**功能性文件，不是装饰**。
+ */
+const NOT_FOUND_FILE = path.join(ROOT, 'web', 'public', '404.html');
+const notFoundProblems = [];
+if (!fs.existsSync(NOT_FOUND_FILE)) {
+  notFoundProblems.push(
+    'web/public/404.html 不存在 —— Cloudflare Pages 会把所有未命中路径回落成 200 + index.html，' +
+      '导致前端误判"在线"并拿不到数据（详见 deploy.yml 与 docs/05）。',
+  );
+} else {
+  const html = fs.readFileSync(NOT_FOUND_FILE, 'utf8');
+  if (/\/assets\/index-/.test(html)) {
+    notFoundProblems.push('web/public/404.html 里引用了应用主包（/assets/index-…），它应当是独立的最小页面。');
+  }
+  if (!/<html[\s>]/i.test(html)) notFoundProblems.push('web/public/404.html 看起来不是完整的 HTML 文档。');
+  console.log(`\n站点回落页：web/public/404.html  ${Math.round(fs.statSync(NOT_FOUND_FILE).size / 1024)} KB`);
+}
+
+if (notFoundProblems.length) {
+  console.error(`\n❌ 站点回落页校验失败（${notFoundProblems.length} 项）：`);
+  for (const p of notFoundProblems) console.error(`   - ${p}`);
+  process.exit(1);
+}
+console.log('✅ 站点回落页校验通过：404.html 存在且是独立页面（Cloudflare Pages / GitHub Pages 都会返回 404 状态）');

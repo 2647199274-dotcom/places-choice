@@ -32,6 +32,7 @@
     "test:areas": "node tests/verify-areas.mjs",
     "test:web": "node tests/verify-web.mjs",
     "test:local": "node tests/verify-local.mjs",
+    "test:live": "node tests/check-live.mjs",
     "test": "npm run typecheck && npm run test:draw && npm run test:region && npm run test:china && npm run test:areas && npm run test:collector && npm run verify:dataset",
     "test:probe": "node tests/probe-apis.mjs && node tests/probe-round2.mjs && node tests/probe-round3.mjs"
   },
