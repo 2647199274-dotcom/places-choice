@@ -1,0 +1,15 @@
+docs: 安装 12 个项目 skill（含部署/采集/区域/规则/测试规范）
+
+- git-commit-save: 改完即存档（跑测试→分类提交→推送）
+- gh-pages-deploy: GitHub Pages 部署规范（--base 子路径、静态 dataset 快照、Key 不进仓库）
+  （参考社区 web-deploy-github 思路重写，未重复安装功能重叠的 skill）
+- pwa-mobile: 添加到主屏幕/全屏/图标/离线（iOS 需 PNG 等坑已写明）
+- amap-collector: v3 分页坑、字段映射、限速、配额与规模策略
+- area-filter: 区域四维筛选（地铁距离关联、商场名归一化、交集短路）
+- roulette-rules: 抽签契约（权重/扇区/落点公平/吃饭规则/前后端一致性）
+- offline-dataset: 离线数据集与前后端引擎一致性校验
+- ui-design-system: 克制风格（美团的工具感，明确不采纳炫技方向）
+- verify-suites: 改什么跑什么 + 真实失败案例对照表
+- research-sources: 由本地 deep-research 裁剪为"数据源可采性"专用
+- karpathy-guidelines / frontend-design: 直接取自用户本机 skill 库
+- .dsh/skills/README.md: 清单、来源说明与维护约定
