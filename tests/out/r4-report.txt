@@ -1,0 +1,80 @@
+[browser] 200 text=283B html=700256B waf/login触发=true  amap_search_hotpot  期望=高德搜索结果(店名+地址+poiid) 
+  title=高德地图 - 精准专业的手机地图
+  text: 杭州 小雨 19/24℃ 2 公里 反馈 路况 测距 地铁 分享 图层 3D 全屏 ©2026 高德 - GS(2025)5996号 - 甲测资字11112528 - 京ICP备2023020281号-12 - 京公网安备 11010502056787号帮助文档资质证照协议与声明开放平台新增地点意见反馈商户免费标注车机版高德社会责任网上有害信息举报涉未成年人举报算法推荐举报生活服务专项举报廉正举报 ⓘ 手机号码 短信登录 二维码登录 请按住滑块，拖动到最右边 发送验证码 立即登录 我已阅读并同意 《高德服务条款》《高德隐私权政策》；未注册的手机号将自动注册 X
+  xhr:
+    200 https://www.amap.com/search?query=%E7%81%AB%E9%94%85&city=330100
+    200 https://amap-pc-ssr.amap.com/ssr/api/getNewVersionRolloutConfig
+    204 https://www.amap.com/service/grayLog
+    204 https://www.amap.com/service/grayLog
+    302 https://www.amap.com/search?query=%E7%81%AB%E9%94%85&city=330100
+    307 http://www.amap.com/ssr/search?query=%E7%81%AB%E9%94%85&city=330100
+    200 https://www.amap.com/ssr/search?query=%E7%81%AB%E9%94%85&city=330100
+    200 https://webapi.amap.com/maps?callback=___onAPILoaded&v=2.0&key=6649bab946bdc247a7fb9c8380b5e6f4&plugin=AMap.ToolBar,AMap.Scale,AMap.Geocoder,AMap.Geol
+    200 https://www.amap.com/ssr/api/getIpLocation
+    200 https://amap-pc-ssr.amap.com/ssr/api/getCip
+    200 https://webapi.amap.com/maps?callback=___onAPILoaded&v=2.0&key=6649bab946bdc247a7fb9c8380b5e6f4&plugin=AMap.ToolBar,AMap.Scale,AMap.Geocoder,AMap.Geol
+    200 https://www.amap.com/service/checklogin
+[browser] 200 text=38B html=19920B waf/login触发=true  ctrip_sight_hz  期望=携程杭州景点列表 
+  title=携程旅行验证
+  text: 请完成下面的验证测试。 请按顺序点选图标 向右滑动填充拼图 向右滑动填充拼图
+  xhr:
+    200 https://m.ctrip.com/restapi/soa2/18088/getAppConfig.json
+    200 https://www.google.com/pagead/1p-user-list/1066331136/?value=0&label=cG9hCIyRngMQgNi7_AM&guid=ON&script=0&is_vtc=1&cid=CAQS0wEAQM4h3DZ6FsaxgL7lTlJVwXW
+[browser] 202 text=0B html=16647B waf/login触发=false  mafengwo_jd_hz  期望=马蜂窝杭州景点 
+  title=
+  text: 
+[browser] 200 text=96B html=289210B waf/login触发=true  dianping_hz_ch10  期望=大众点评(看是否验证码) 
+  title=验证中心
+  text: 身份核实 请拖动下方滑块完成拼图 0594008b5eb04dfdbee622be0079a0c7 © 2003-2021 dianping.com, All Rights Reserved.
+  xhr:
+    200 https://verify.meituan.com/v2/ext_api/page_data
+    200 https://catfront.dianping.com/api/log?v=1&sdk=1.10.0&webVersion=1.6.10
+    200 https://catfront.dianping.com/api/metric?v=1&sdk=1.10.0&webVersion=1.6.10&p=Yoda-FE
+    200 https://catfront.dianping.com/api/metric?v=1&sdk=1.10.0&webVersion=1.6.10&p=Yoda-FE
+    200 https://catfront.dianping.com/api/log?v=1&sdk=1.10.0&webVersion=1.6.10
+    200 https://catfront.dianping.com/api/log?v=1&sdk=1.10.0&webVersion=1.6.10
+    200 https://catfront.dianping.com/api/log?v=1&sdk=1.10.0&webVersion=1.6.10
+    200 https://catfront.dianping.com/api/log?v=1&sdk=1.10.0&webVersion=1.6.10
+    200 https://verify.meituan.com/v2/ext_api/spiderindefence/info
+    200 https://catfront.dianping.com/api/metric?v=1&sdk=1.10.0&webVersion=1.6.10&p=com.sankuai.yoda.spiderindefence.mtsi
+    200 https://catfront.dianping.com/api/metric?v=1&sdk=1.10.0&webVersion=1.6.10&p=com.sankuai.yoda.spiderindefence.mtsi
+    200 https://catfront.dianping.com/api/metric?v=1&sdk=1.10.0&webVersion=1.6.10&p=com.sankuai.yoda.spiderindefence.mtsi
+       (waitFor 选择器超时: body)
+[browser] 200 text=133B html=214453B waf/login触发=true  xhs_explore  期望=小红书(看是否要登录) 
+  title=小红书 - 你的生活兴趣社区
+  text: 登录后推荐更懂你的笔记 可用 小红书 或 微信 扫码 小红书如何扫码 手机号登录 +86 获取验证码 登录 我已阅读并同意《用户协议》《隐私政策》《儿童/青少年个人信息保护规则》 新用户可直接登录 帮助与反馈：小红书 App 点击“我 - 帮助与客服”进行反馈 活动
+  xhr:
+    200 https://as.xiaohongshu.com/api/sec/v1/ds?appId=xhs-pc-web
+    200 https://as.xiaohongshu.com/api/p/pj
+    200 https://as.xiaohongshu.com/api/sec/v1/sbtsource
+    200 https://as.xiaohongshu.com/api/sec/v1/scripting
+    200 https://edith.xiaohongshu.com/api/redcaptcha/v2/getconfig
+    200 https://as.xiaohongshu.com/api/sec/v1/scripting
+    200 https://edith.xiaohongshu.com/api/sns/web/v1/system/config
+    200 https://edith.xiaohongshu.com/api/sns/web/v1/config
+    200 https://edith.xiaohongshu.com/api/sns/web/v2/user/me
+    200 https://edith.xiaohongshu.com/api/sns/web/v1/login/activate
+    200 https://edith.xiaohongshu.com/api/sns/web/racing_get
+    200 https://edith.xiaohongshu.com/api/sns/web/worldcup/access_check
+[browser] 200 text=2683B html=1115684B waf/login触发=true  bilibili_search  期望=B站搜索(评价内容源) 
+  title=杭州美食-哔哩哔哩_bilibili
+  text: 首页 番剧 直播 游戏中心 会员购 漫画 赛事 下载客户端 登录 登录后你可以: 免费看高清视频 多端同步播放记录 发表弹幕/评论 热门番剧影视看不停 立即登录 首次使用？点我注册 大会员 消息 动态 收藏 历史 创作中心 投稿 搜索 综合 视频 99+ 番剧 0 影视 0 直播 5 专栏 99+ 用户 19 综合排序 最多播放 最新发布 最多弹幕 最多收藏 更多筛选 10.9万 230 04:27 杭州网友呼声很高的家常菜馆，味道怎么样？——福缘居 特厨魏味- · 昨天 18.2万 139 03:00 挑战吃遍100个城市！3天炫遍25家热门美食（部分放在上一期啦）！美食荒漠是对杭州最大的误解吧！ 宥宥不会喝酒 · 2024年7月
+  xhr:
+    200 https://search.bilibili.com/all?keyword=%E6%9D%AD%E5%B7%9E%E7%BE%8E%E9%A3%9F
+    200 https://i0.hdslb.com/bfs/archive/ac5c30ece1ee0822edd622c0062f78683056f5be.jpg@672w_378h_1c_!web-search-common-cover.avif
+    200 https://i0.hdslb.com/bfs/archive/e5e3851236cfbfa5913ac8e3433cb68adb13bf7d.jpg@672w_378h_1c_!web-search-common-cover.avif
+    200 https://i0.hdslb.com/bfs/archive/676c90fd5f8ba247499bbc03b037b149dece466f.jpg@672w_378h_1c_!web-search-common-cover.avif
+    200 https://i0.hdslb.com/bfs/archive/5388a580f73778cd4a1b195e95425ce2bdc249eb.jpg@672w_378h_1c_!web-search-common-cover.avif
+    200 https://i0.hdslb.com/bfs/archive/01700f6c91b77fcda34644bdf7586e51af8205b6.jpg@672w_378h_1c_!web-search-common-cover.avif
+    200 https://i0.hdslb.com/bfs/archive/2a9bbe125193f0beffcc3ff6c5933169c8e11eb8.jpg@672w_378h_1c_!web-search-common-cover.avif
+    200 https://i0.hdslb.com/bfs/archive/a0f9a071663f4debf750c5e8625bc77edb4ba340.jpg@672w_378h_1c_!web-search-common-cover.avif
+    200 https://i0.hdslb.com/bfs/archive/5716109fa96a71fd31d33ac6b9043e9417a612b3.jpg@672w_378h_1c_!web-search-common-cover.avif
+    200 https://i2.hdslb.com/bfs/archive/73db2b8af9794eacfe306dd91a94faa9a6f8df0d.jpg@672w_378h_1c_!web-search-common-cover.avif
+    200 https://i1.hdslb.com/bfs/archive/6e792b956254f50db79adadc33d86b0377eab48e.jpg@672w_378h_1c_!web-search-common-cover.avif
+    200 https://i1.hdslb.com/bfs/archive/cb2e1339a16abb7313e216fa50b90911014cbf49.jpg@672w_378h_1c_!web-search-common-cover.avif
+       (waitFor 选择器超时: body)
+[browser] 200 text=0B html=39B waf/login触发=false  qunar_ticket_hz  期望=去哪儿门票(杭州景点) 
+  title=
+  text: 
+  xhr:
+    200 https://piao.qunar.com/ticket/list.htm?keyword=%E6%9D%AD%E5%B7%9E&from=mpl_search_suggest

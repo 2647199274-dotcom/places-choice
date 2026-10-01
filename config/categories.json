@@ -1,0 +1,303 @@
+{
+  "$comment": "项目（转盘扇区类别）体系。amapTypes 用于高德 v5/place/text 的 types 参数；keywords 为高德搜索关键词（types 无结果时回退）。requiredForDining=true 表示'吃饭'类，人工选择与随机模式都必须包含。",
+  "version": 1,
+  "categories": [
+    {
+      "id": "eat",
+      "label": "吃饭",
+      "icon": "🍜",
+      "group": "吃饭",
+      "required": true,
+      "weight": 3.0,
+      "amapTypes": "050100|050200|050300|050400|050500|050600",
+      "keywords": ["美食", "中餐厅", "杭帮菜"],
+      "desc": "本帮菜、家常菜、正餐"
+    },
+    {
+      "id": "hotpot",
+      "label": "火锅",
+      "icon": "🍲",
+      "group": "吃饭",
+      "required": false,
+      "weight": 1.6,
+      "amapTypes": "050100",
+      "keywords": ["火锅", "串串香", "牛肉火锅"],
+      "desc": "川渝/潮汕/铜锅"
+    },
+    {
+      "id": "bbq",
+      "label": "烧烤",
+      "icon": "🍢",
+      "group": "吃饭",
+      "required": false,
+      "weight": 1.4,
+      "amapTypes": "050100",
+      "keywords": ["烧烤", "烤肉", "撸串"],
+      "desc": "烤肉、撸串、夜市烧烤"
+    },
+    {
+      "id": "japan",
+      "label": "日料",
+      "icon": "🍣",
+      "group": "吃饭",
+      "required": false,
+      "weight": 1.2,
+      "amapTypes": "050200",
+      "keywords": ["日本料理", "寿司", "居酒屋", "烧鸟"],
+      "desc": "寿司、居酒屋、烧鸟"
+    },
+    {
+      "id": "westfood",
+      "label": "西餐",
+      "icon": "🥩",
+      "group": "吃饭",
+      "required": false,
+      "weight": 1.1,
+      "amapTypes": "050200",
+      "keywords": ["西餐厅", "牛排", "意大利菜"],
+      "desc": "牛排、意面、法餐"
+    },
+    {
+      "id": "snack",
+      "label": "小吃快餐",
+      "icon": "🥟",
+      "group": "吃饭",
+      "required": false,
+      "weight": 1.3,
+      "amapTypes": "050300|050400",
+      "keywords": ["小吃", "快餐", "生煎", "面馆", "拌川"],
+      "desc": "面馆、生煎、快餐、本地小吃"
+    },
+    {
+      "id": "dessert",
+      "label": "甜品奶茶",
+      "icon": "🍰",
+      "group": "吃饭",
+      "required": false,
+      "weight": 1.0,
+      "amapTypes": "050500|050600",
+      "keywords": ["甜品", "奶茶", "糖水"],
+      "desc": "甜品店、奶茶"
+    },
+    {
+      "id": "coffee",
+      "label": "咖啡",
+      "icon": "☕",
+      "group": "休闲",
+      "required": false,
+      "weight": 1.2,
+      "amapTypes": "050500",
+      "keywords": ["咖啡厅", "咖啡", "手冲"],
+      "desc": "咖啡馆、精品咖啡"
+    },
+    {
+      "id": "tea",
+      "label": "茶馆",
+      "icon": "🍵",
+      "group": "休闲",
+      "required": false,
+      "weight": 0.8,
+      "amapTypes": "050600",
+      "keywords": ["茶馆", "茶室", "围炉煮茶"],
+      "desc": "茶馆、围炉煮茶"
+    },
+    {
+      "id": "bar",
+      "label": "酒吧",
+      "icon": "🍺",
+      "group": "夜生活",
+      "required": false,
+      "weight": 1.3,
+      "amapTypes": "080300",
+      "keywords": ["酒吧", "清吧", "精酿", "鸡尾酒"],
+      "desc": "清吧、精酿、鸡尾酒"
+    },
+    {
+      "id": "ktv",
+      "label": "KTV",
+      "icon": "🎤",
+      "group": "娱乐",
+      "required": false,
+      "weight": 1.2,
+      "amapTypes": "080300",
+      "keywords": ["KTV", "量贩式KTV", "唱歌"],
+      "desc": "量贩式KTV、包厢唱歌"
+    },
+    {
+      "id": "mahjong",
+      "label": "麻将馆",
+      "icon": "🀄",
+      "group": "娱乐",
+      "required": false,
+      "weight": 1.1,
+      "amapTypes": "080300",
+      "keywords": ["棋牌室", "麻将馆", "棋牌"],
+      "desc": "棋牌室、麻将馆"
+    },
+    {
+      "id": "escape",
+      "label": "密室/剧本杀",
+      "icon": "🕵️",
+      "group": "娱乐",
+      "required": false,
+      "weight": 1.0,
+      "amapTypes": "080300",
+      "keywords": ["密室逃脱", "剧本杀", "桌游"],
+      "desc": "密室逃脱、剧本杀、桌游"
+    },
+    {
+      "id": "movie",
+      "label": "电影院",
+      "icon": "🎬",
+      "group": "娱乐",
+      "required": false,
+      "weight": 1.0,
+      "amapTypes": "080600",
+      "keywords": ["电影院", "影城", "IMAX"],
+      "desc": "影城、IMAX"
+    },
+    {
+      "id": "arcade",
+      "label": "电玩/街机",
+      "icon": "🕹️",
+      "group": "娱乐",
+      "required": false,
+      "weight": 0.8,
+      "amapTypes": "080300",
+      "keywords": ["电玩城", "游戏厅", "抓娃娃"],
+      "desc": "电玩城、抓娃娃"
+    },
+    {
+      "id": "sight",
+      "label": "景区",
+      "icon": "🏞️",
+      "group": "游玩",
+      "required": false,
+      "weight": 1.4,
+      "amapTypes": "110000|110100|110200",
+      "keywords": ["风景名胜", "景区", "公园"],
+      "desc": "风景名胜、公园广场"
+    },
+    {
+      "id": "hike",
+      "label": "爬山",
+      "icon": "⛰️",
+      "group": "户外",
+      "required": false,
+      "weight": 1.3,
+      "amapTypes": "110200",
+      "keywords": ["登山", "爬山", "古道", "山峰", "徒步"],
+      "desc": "爬山、登山步道、古道"
+    },
+    {
+      "id": "camp",
+      "label": "露营",
+      "icon": "🏕️",
+      "group": "户外",
+      "required": false,
+      "weight": 0.9,
+      "amapTypes": "110000",
+      "keywords": ["露营地", "露营", "野餐"],
+      "desc": "露营地、野餐"
+    },
+    {
+      "id": "museum",
+      "label": "博物馆/展览",
+      "icon": "🏛️",
+      "group": "文化",
+      "required": false,
+      "weight": 1.0,
+      "amapTypes": "140100|140200",
+      "keywords": ["博物馆", "美术馆", "展览", "科技馆"],
+      "desc": "博物馆、美术馆、展览"
+    },
+    {
+      "id": "temple",
+      "label": "寺庙/古迹",
+      "icon": "🛕",
+      "group": "文化",
+      "required": false,
+      "weight": 0.9,
+      "amapTypes": "110000|140000",
+      "keywords": ["寺庙", "古寺", "古迹", "古镇"],
+      "desc": "寺庙、古迹、古镇"
+    },
+    {
+      "id": "mall",
+      "label": "逛街/商场",
+      "icon": "🛍️",
+      "group": "逛街",
+      "required": false,
+      "weight": 1.0,
+      "amapTypes": "060100|060400",
+      "keywords": ["购物中心", "商场", "步行街", "市集"],
+      "desc": "购物中心、步行街、市集"
+    },
+    {
+      "id": "bookstore",
+      "label": "书店",
+      "icon": "📚",
+      "group": "文化",
+      "required": false,
+      "weight": 0.7,
+      "amapTypes": "060400",
+      "keywords": ["书店", "图书馆", "书房"],
+      "desc": "书店、书房"
+    },
+    {
+      "id": "spa",
+      "label": "按摩/足疗",
+      "icon": "💆",
+      "group": "放松",
+      "required": false,
+      "weight": 0.8,
+      "amapTypes": "080300",
+      "keywords": ["足疗", "按摩", "推拿", "SPA"],
+      "desc": "足疗、按摩、SPA"
+    },
+    {
+      "id": "bath",
+      "label": "洗浴/温泉",
+      "icon": "♨️",
+      "group": "放松",
+      "required": false,
+      "weight": 0.8,
+      "amapTypes": "080500",
+      "keywords": ["洗浴", "温泉", "汗蒸"],
+      "desc": "洗浴中心、温泉"
+    },
+    {
+      "id": "livehouse",
+      "label": "LiveHouse/演出",
+      "icon": "🎸",
+      "group": "夜生活",
+      "required": false,
+      "weight": 0.8,
+      "amapTypes": "080600",
+      "keywords": ["LiveHouse", "剧场", "演出", "音乐厅"],
+      "desc": "LiveHouse、剧场演出"
+    },
+    {
+      "id": "park",
+      "label": "散步/湖边",
+      "icon": "🌳",
+      "group": "户外",
+      "required": false,
+      "weight": 0.9,
+      "amapTypes": "110100",
+      "keywords": ["公园", "湖滨", "绿道", "广场"],
+      "desc": "公园、湖边散步、绿道"
+    },
+    {
+      "id": "nightmarket",
+      "label": "夜市",
+      "icon": "🌙",
+      "group": "夜生活",
+      "required": false,
+      "weight": 1.1,
+      "amapTypes": "050300|060400",
+      "keywords": ["夜市", "美食街", "小吃街"],
+      "desc": "夜市、美食街"
+    }
+  ]
+}

@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+    <meta name="viewport"
+          content="width=device-width,initial-scale=1.0,maximum-scale=1.0,minimum-scale=1.0,user-scalable=no"/>
+    <meta http-equiv="Pragma" content="no-cache"/>
+    <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1"/>
+    <title>携程旅行验证</title>
+    <link rel="shortcut icon" href="images/ctrip.ico">
+    <link rel="stylesheet" href="css/bootstrap.min.css"/>
+    <link rel="stylesheet" href="css/ctrip.css"/>
+    <script type="text/javascript" src="js/ua.js"></script>
+    <input type='hidden' id="page_id" value="10650132334" />
+    <script type="text/javascript" src="https://bd-s.tripcdn.cn/modules/ubt/websdk/ubt.minh.3f5b45c2657736f239fa688a5fd0dc41.js"></script>
+    <script>
+        window["UBT_API"].push({
+            type : "register",
+            data : {
+                pageId : "10650132334",
+                appId : 700005,
+            }
+        });
+    </script>
+<!--    <script type="text/javascript">-->
+<!--        var ua = navigator.userAgent.toLowerCase();-->
+<!--        if (isMobile(ua)) {-->
+<!--            ;(function () {-->
+<!--                if (!window.$_bf || !window.$_bf.loaded) {-->
+<!--                    var a = new Date, b = "?v=" + a.getFullYear() + a.getMonth() + "_" + a.getDate(),-->
+<!--                        a = document.createElement("script");-->
+<!--                    a.type = "text/javascript";-->
+<!--                    a.charset = "utf-8";-->
+<!--                    a.async = !0;-->
+<!--                    // a.src = "//webresource.c-ctrip.com/code/ubt/_mubt.min.js" + b;-->
+<!--                    a.src = "//webresource.tripcdn.com/ares2/sysdev/ubt/*/default/_mubt.min.js" + b;-->
+<!--                    b = document.getElementsByTagName("script")[0];-->
+<!--                    b.parentNode.insertBefore(a, b)-->
+<!--                }-->
+<!--            })();-->
+<!--        } else {-->
+<!--            ;(function () {-->
+<!--                if (!(window.$_bf && window.$_bf.loaded || window.$LAB || window.CtripJsLoader)) {-->
+<!--                    var a = new Date, b = !1, c = "?v=" + a.getFullYear() + a.getMonth() + "_" + a.getDate(),-->
+<!--                        a = document.createElement("script");-->
+<!--                    a.type = "text/javascript";-->
+<!--                    a.charset = "utf-8";-->
+<!--                    a.async = !0;-->
+<!--                    try {-->
+<!--                        b = "https:" == location.protocol-->
+<!--                    } catch (d) {-->
+<!--                    }-->
+<!--                    a.src = ((b ? "https:" : "http:")) + "//webresource.c-ctrip.com/code/ubt/_bfa.min.js" + c;-->
+<!--                    //a.src = ((b ? "https:" : "http:")) + "//webresource.tripcdn.com/ares2/sysdev/ubt/*/default/_bfa.min.js" + c;-->
+<!--                    b = document.getElementsByTagName("script")[0];-->
+<!--                    b.parentNode.insertBefore(a, b)-->
+<!--                }-->
+<!--            })();-->
+<!--        }-->
+<!--    </script>-->
+        <script src="https://bd-s.tripcdn.cn/modules/infosec/jigsawCaptcha/jigsaw-captcha.min.70c6e6893d555dd045d1a4110c14953a.macro.js"></script>
+<!--    <script src="//webresource.tripcdn.com/ares2/infosec/tripCaptcha/~1.0.0/default/js/captcha.min.js?expires=1d"></script>-->
+</head>
+<body>
+<div class="postagram-main">
+    <div class="main-container">
+        <div id="download-app" class="container-fluid content-hero">
+            <div class="row-fluid light" style="display:inline-block;width:100%;color: #fff;">
+                <div class="float-div text-center" style="">
+                    <div class="valid-form" style="">
+                        <div class="head-img"></div>
+                        <p style="font: normal 100% Helvetica, Arial, sans-serif;width: auto;height: auto; overflow: hidden; word-wrap:break-word; padding-bottom: 30px">
+<!--                            请 完 成 以 下 验 证-->
+                            请完成下面的验证测试。
+                        </p>
+                        <form name="sms_download_form" id="sms_download_form_exp" style="position:relative;z-index: 1;">
+                            <div style="display:inline-block;height:50px;vertical-align:middle;fons-size:0;margin-top:5px;">
+                                <div id="verification-code"></div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <div class="footImg"></div>
+        </div>
+    </div>
+</div>
+
+<script type="text/javascript" src="js/jquery-1.8.3.min.js"></script>
+<script type="text/javascript" src="js/jquery.JPlaceholder.js"></script>
+<script>
+    var slidObj = new jigsawVerification({
+        id: "verification-code",
+        appId: '100030800',
+        businessSite: 'ibu_antibot_online_pic',
+        width: '260px',
+        height: '40px',
+        // language: 'zh-CN',
+        language: 'zh-CN',
+        chooseOpt: {
+            type: "pop"
+        },
+        stateChange: function (s) {
+        },
+        resultHandler: function (e) {
+            if (e.checkState == 'success') {
+                var a = {
+                    "token": e.token,
+                    "checkState": e.checkState,
+                    "version": e.version,
+                    "rid": e.rid,
+                    "targetUrl":decodeURIComponent(getQueryVariable('returnUrl')),
+                    "bgref":decodeURIComponent(getQueryVariable('bgref'))
+                };
+                $.ajax({
+                    url: "/verify",
+                    type: "post",
+                    data: JSON.stringify(a),
+                    async: false,
+                    contentType: "application/json",
+                    error: function (e) {
+                        location.reload();
+                    },
+                    success: function (d) {
+                        if (d === "success") {
+                            let returnUrl = decodeURIComponent(getQueryVariable('returnUrl'));
+                            if (returnUrl !== "") {
+                                window.location.href = returnUrl;
+                            } else if (document.referrer) {
+                                window.location.href = document.referrer;
+                            } else {
+                                window.history.back();
+                            }
+                        } else {
+                            window.history.back();
+                        }
+                    }
+                });
+            }
+        }
+    });
+
+    function getQueryVariable(variable) {
+        let query = window.location.search ? window.location.search.substring(1) : "";
+        let vars = query.split("&");
+        for (let i=0; i<vars.length; i++) {
+            let pair = vars[i].split("=");
+            if(pair[0] === variable){
+                return pair[1];
+            }
+        }
+        return "";
+    }
+
+    function getBack() {
+        var reg = new RegExp("(^|&)" + "back" + "=([^&]*)(&|$)");
+        var r = window.location.search.substr(1).match(reg);
+        if (r != null) {
+            var back = parseInt(unescape(r[2]));
+            if (!isNaN(back)) {
+                return back;
+            }
+        }
+        return -1;
+    }
+</script>
+</body>
+</html>

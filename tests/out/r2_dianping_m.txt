@@ -1,0 +1,103 @@
+<!DOCTYPE html><html><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="ie=edge"><title>大众点评网</title><meta name="keyword" content=""><meta name="description" content=""><meta name="for" content="meituan.com"><meta name="lx:category" content="dianping_nova"><meta name="lx:appnm" content="dp_operate"><meta name="lx:autopv" content="off"><script>!(function (e) {
+    var d = document.documentElement;
+    var ua = navigator.userAgent;
+    var b = window.devicePixelRatio;
+    b = 3 <= b ? 3 : 2 <= b ? 2 : 1;
+    var a = 1 / b;
+    var init = 1 / b;
+    if (/Android/.test(ua)) {
+        init = 1;
+    }
+    var c = document.querySelector('meta[name="viewport"]');
+    a =
+        'initial-scale=' +
+        init +
+        ',maximum-scale=' +
+        a +
+        ',minimum-scale=' +
+        a +
+        ',user-scalable=no,width=device-width,viewport-fit=cover';
+    c ? c.setAttribute('content', a) : document.write('<meta name="viewport" content="' + a + '"/>');
+    c = function () {
+        var a = d.clientWidth;
+        d.style.fontSize = (a / e) * 100 + 'px';
+    };
+    c();
+    window.addEventListener('resize', c);
+})(750);
+</script><link rel="dns-prefetch" href="//lx.meituan.net"><link rel="dns-prefetch" href="//wreport1.meituan.net"><link rel="dns-prefetch" href="//report.meituan.com"><link rel="dns-prefetch" href="//mc.meituan.net"><link rel="dns-prefetch" href="//p0.meituan.net"><link rel="dns-prefetch" href="//p1.meituan.net"><link rel="dns-prefetch" href="//s0.meituan.net"><link rel="dns-prefetch" href="//s1.meituan.net"><link rel="dns-prefetch" href="//s3.meituan.net"><link rel="dns-prefetch" href="//m.51ping.com"><link rel="dns-prefetch" href="//www.dpfile.com"><link rel="dns-prefetch" href="//s3plus.sankuai.com"><link rel="dns-prefetch" href="//msstest.sankuai.com"><script>"use strict";!function(){var e=0<arguments.length&&void 0!==arguments[0]?arguments[0]:"_Owl_",a=window;a[e]||(a[e]={isRunning:!1,isReady:!1,preTasks:[],dataSet:[],pageData:[],disableMutaObserver:!1,observer:null,use:function(e,t){this.isReady&&a.Owl&&a.Owl[e](t),this.preTasks.push({api:e,data:[t]})},add:function(e){this.dataSet.push(e)},run:function(){var t=this;if(!this.isRunning){this.isRunning=!0;var e=a.onerror;a.onerror=function(){this.isReady||this.add({type:"jsError",data:arguments}),e&&e.apply(a,arguments)}.bind(this),(a.addEventListener||a.attachEvent)("error",function(e){t.isReady||t.add({type:"resError",data:[e]})},!0);var i=window.MutationObserver||window.WebKitMutationObserver||window.MozMutationObserver,r=window.performance||window.WebKitPerformance;if(i&&r){var n=-1,s=window.navigator.userAgent;if(-1<s.indexOf("compatible")&&-1<s.indexOf("MSIE")?(new RegExp("MSIE (\\d+\\.\\d+);").test(s),n=parseFloat(RegExp.$1)):-1<s.indexOf("Trident")&&-1<s.indexOf("rv:11.0")&&(n=11),-1!==n&&n<=11)return void(this.disableMutaObserver=!0);try{this.observer=new i(function(e){t.pageData.push({mutations:e,startTime:r.now()})}),this.observer.observe(document,{childList:!0,subtree:!0})}catch(e){console.log("mutationObserver err")}}else this.disableMutaObserver=!0}}},a[e].run())}();</script><script>!(function (win, doc, ns) {
+    var cacheFunName = '_MeiTuanALogObject';
+    win[cacheFunName] = ns;
+    if (!win[ns]) {
+        var _LX = function () {
+            _LX.q.push(arguments);
+            return _LX;
+        };
+        _LX.q = _LX.q || [];
+        _LX.l = +new Date();
+        win[ns] = _LX;
+    }
+})(window, document, 'LXAnalytics');</script></head><meta name="lx:cid" content="c_dianping_nova_fv41bunj"><link rel="stylesheet" type="text/css" href="//s3plus.sankuai.com/static-prod01/com.sankuai.dpaccountweb.maccount-files/9f378bb/css/index.css"><link rel="stylesheet" type="text/css" href="//s3plus.sankuai.com/static-prod01/com.sankuai.dpaccountweb.maccount-files/9f378bb/css/mlogin/smslogin/index.css"><script src="//s3plus.sankuai.com/static-prod01/com.sankuai.dpaccountweb.maccount-files/9f378bb/js/jsencrypt.min.js"></script><script src="//s3plus.sankuai.com/static-prod01/com.sankuai.dpaccountweb.maccount-files/9f378bb/js/appleid.auth.js"></script><script src="//connect.qq.com/qc_jssdk.js" charset="utf=8"> </script><script src="https://open.mobile.qq.com/sdk/qqapi.js?_bid=152"></script><script>mqq.build('mqq.tenpay.getAppAuthorizationCode', {
+    iOS: function(params, callback) {
+    var callbackName = callback ? mqq.callback(callback) : null;
+    mqq.invokeClient('qw_charge', 'getAppAuthorizationCode',
+    params, callback);
+},
+android: function(params, callback) {
+    params.callback = mqq.callback(callback);
+    mqq.invokeClient('qw_charge', 'getAppAuthorizationCode', params);
+},
+supportInvoke: true, support: {
+    iOS: '6.5.0',
+    android: '6.5.0' }
+});</script><script>AppleID.auth.init({
+    clientId : 'prod'=='test'?'com.dianping.dpscope.siwaTest':'com.dianping.dpscope.applesigninbeta',
+    scope : 'email name',
+    redirectURI : 'prod'=='test'?'https://m.51ping.com/authlogin':'https://m.dianping.com/authlogin',
+    state : JSON.stringify({
+        redir: 'https%3A//m.dianping.com/hangzhou/ch10' || "https://m.dianping.com",
+        ft: 28,
+        source: "AppClip"
+    }),
+    response_mode: "query",
+    nonce : String(Math.random()),
+    usePopup : false //or false defaults to false
+});</script><script type="text/javascript" src="https://s0.meituan.net/mxx/yoda/yoda.seed.js" defer></script><body id="main"><script crossorigin="anonymous" src="//s3.meituan.net/v1/mss_eb9ea9cfff9840198c3ae909b17b4270/production/logan-websdk/logan_2.1.5.js"></script><script crossorigin="anonymous" src="//www.dpfile.com/app/owl/static/owl_1.9.3.js"></script><script>window.Owl && window.Owl.start({
+    project: 'com.sankuai.dpaccountweb.maccount', // 项目名
+    devMode: false,                  // 数据上报环境，true - 线下，false - 线上
+    webVersion: '1.0.0',                          // 应用版本号
+    logan:{
+        enable: true,
+        Logan: window.Logan
+    }
+});
+window.Logan && Logan.config({
+    devMode: false,
+})</script><script src="//lx.meituan.net/lx.js" type="text/javascript" charset="utf-8" async></script><script type="text/javascript" src="https://appsec-mobile.meituan.com/h5guard/H5guard.js?v=1790845461238"></script><script>H5guard.init({});
+</script>
+      <div id="app"><div class="main" data-reactroot=""><div class="nav-back"><div class="nav-icon"><img src="https://p1.meituan.net/scarlett/dfe124c9f05ec1f37064a398d117e6781225.png" alt=""/></div></div><div class="title-view"><div class="title">手机号快捷登录</div><div class="subtitle"></div></div><div><div class="phoneinfo"><div class="country-code"><span class="icode" id="country-code">+86</span><img src="https://p0.meituan.net/scarlett/d00538f6651084a0666ab526d349e3e7621.png"/></div><input type="tel" placeholder="请输入手机号码" id="mobile" autoComplete="off"/><div class="clear-wrapper"><img src="https://p1.meituan.net/scarlett/424c292c30152f6d1985ed207ee3cf92796.png"/></div><div class="button-secondary" id="send-vcode">发送验证码</div></div><div class="grayline"></div></div><div><div class="authcode"><div class="label">验证码</div><input placeholder="请输入验证码" id="vcode"/></div><div class="grayline"></div></div><div class="hint">未注册的手机号码验证后自动创建点评账号</div><div class="agreement"><div><img src="https://p1.meituan.net/scarlett/33c7cd200ed0c8955ecc0d2cc369f7c4787.png"/></div><div class="agreement-text">我已阅读并同意<a href="https://rules-center.meituan.com/m/detail/guize/4?activeRule=1">《美团用户服务协议》</a>、<a href="https://rules-center.meituan.com/m/detail/guize/605?activeRule=1">《隐私政策》</a>等，接受免除或者限制责任、诉讼管辖约定等粗体标示条款</div></div><div class="btn-box"><div class="button-primary-disable">登录</div></div><div class="third-part"><div class="split">第三方账户登录</div><div class="icon-qq" id="qqLoginBtn"></div></div><div class="toast-box" style="display:none"><div class="toast"></div></div><div class="mask" style="display:none"><div class="popup-back"><div class="popup"></div><div class="btn-box"><div class="button-cancel">取消</div><div class="button-confirm">前往App登录</div></div></div></div><div class="mask" style="display:none"><div class="yoda-root" id="yoda-root" style="display:none"></div></div><div class="loading-wrapper" style="display:none"><img class="loading" src="https://p0.meituan.net/scarlett/531d00596e69adbec7ea6f516155c53c667.png"/></div></div></div>
+      <script>window.AppData = {"access_token":"","env":"prod","baseUrl":"https:\u002F\u002Fm.dianping.com","redir":"https%3A\u002F\u002Fm.dianping.com\u002Fhangzhou\u002Fch10","countrycode":"86","userAgent":"mozilla\u002F5.0 (iphone; cpu iphone os 17_0 like mac os x) applewebkit\u002F605.1.15 (khtml, like gecko) version\u002F17.0 mobile\u002F15e148 safari\u002F604.1","notitlebar":"0","source":"短信","logintype":"third","$config":{"env":"prod","baseUrl":"https:\u002F\u002Fm.dianping.com","redir":"https%3A%2F%2Fm.dianping.com%2Fnmy%2Fmyinfo","pcRedir":"https:\u002F\u002Fdianping.com"}};</script>
+      
+      <!-- JS_DEPS_BEGIN -->
+      <!-- JS_DEPS_REACT_BEGIN -->
+      <script src="//s3plus.sankuai.com/static-prod01/com.sankuai.dpaccountweb.maccount-files/9f378bb/js/react.js" crossorigin="anonymous"></script>
+      <script src="//s3plus.sankuai.com/static-prod01/com.sankuai.dpaccountweb.maccount-files/9f378bb/js/react-dom.js" crossorigin="anonymous"></script>
+      <!-- JS_DEPS_REACT_END -->
+      <script src="//s3plus.sankuai.com/static-prod01/com.sankuai.dpaccountweb.maccount-files/9f378bb/js/index.js" crossorigin="anonymous"></script>
+      <script src="//s3plus.sankuai.com/static-prod01/com.sankuai.dpaccountweb.maccount-files/9f378bb/js/mlogin/smslogin/index.js" crossorigin="anonymous"></script>
+      <!-- JS_DEPS_END -->
+      <!-- JS_APP_BOOTSTRAP_BEGIN -->
+      <script>
+      ;(function(){
+        try {
+          var app = document.getElementById('app');
+          if('default' in App) App = App[ 'default' ];
+          // https://facebook.github.io/react/docs/react-dom.html#hydrate
+          (ReactDOM.hydrate || ReactDOM.render)(
+            React.createElement(App, window.AppData), app
+          );
+        } catch (e) {
+          console.error('[Turbo#React] ', e);
+        }
+      })(this);</script>
+      <!-- JS_APP_BOOTSTRAP_END --></body></html>

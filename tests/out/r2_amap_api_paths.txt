@@ -1,0 +1,2 @@
+/service/grayLog
+/ssr/api/getNewVersionRolloutConfig

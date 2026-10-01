@@ -1,0 +1,25 @@
+# 依赖与缓存（不进仓库）
+node_modules/
+.npm-cache/
+
+# 机密：高德 Key
+.env
+
+# 本地数据库与采集原始响应
+data/*.db
+data/*.db-wal
+data/*.db-shm
+data/raw/
+data/regions-cache.json
+
+# 构建产物
+web/dist/
+android/
+dist/
+
+# 系统与编辑器
+.DS_Store
+Thumbs.db
+*.log
+.vscode/
+.idea/

@@ -1,0 +1,83 @@
+{
+  "version": 0.6,
+  "generator": "Overpass API 0.7.62.11 87bfad18",
+  "osm3s": {
+    "timestamp_osm_base": "2026-10-01T09:07:04Z",
+    "copyright": "The data included in this document is from www.openstreetmap.org. The data is made available under ODbL."
+  },
+  "elements": [
+
+{
+  "type": "node",
+  "id": 26607397,
+  "lat": 30.2375817,
+  "lon": 120.1514595,
+  "tags": {
+    "amenity": "restaurant",
+    "cuisine": "indian",
+    "name": "Indian Kitchen"
+  }
+},
+{
+  "type": "node",
+  "id": 27246222,
+  "lat": 30.2640357,
+  "lon": 120.1547109,
+  "tags": {
+    "amenity": "restaurant",
+    "internet_access": "wlan",
+    "name": "新白鹿酒店",
+    "name:en": "New White Deer Restaurant",
+    "name:zh": "新白鹿酒店",
+    "name:zh-Latn-pinyin": "Xīnbáilù Jiǔdiàn"
+  }
+},
+{
+  "type": "node",
+  "id": 27262517,
+  "lat": 30.2600905,
+  "lon": 120.1655459,
+  "tags": {
+    "amenity": "restaurant",
+    "name": "川味观",
+    "name:en": "Chuan Wei Guan",
+    "name:zh": "川味观",
+    "name:zh-Latn-pinyin": "Chuān Wèi Guān",
+    "wheelchair": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 33616646,
+  "lat": 30.2790371,
+  "lon": 120.1614643,
+  "tags": {
+    "amenity": "restaurant",
+    "name": "川味观",
+    "name:en": "Chuan Wei Guan",
+    "name:zh": "川味观",
+    "name:zh-Latn-pinyin": "Chuān Wèi Guān"
+  }
+},
+{
+  "type": "node",
+  "id": 33616862,
+  "lat": 30.2785403,
+  "lon": 120.1202133,
+  "tags": {
+    "amenity": "restaurant",
+    "brand": "必胜客",
+    "brand:en": "Pizza Hut",
+    "brand:wikidata": "Q191615",
+    "brand:wikipedia": "en:Pizza Hut",
+    "brand:zh": "必胜客",
+    "cuisine": "pizza",
+    "name": "必胜客",
+    "name:en": "Pizza Hut",
+    "name:zh": "必胜客",
+    "name:zh-Latn-pinyin": "Bì Shèng Kè"
+  }
+}
+
+  ]
+}

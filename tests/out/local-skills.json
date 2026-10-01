@@ -1,0 +1,158 @@
+[
+  {
+    "repo": "academic-research-skills-main",
+    "name": "academic-paper",
+    "desc": "12-agent academic paper writing pipeline. 10 modes (full/plan/outline/revision/revision-coach/abstract/lit-review/format-convert/citation-check/disclosure). 6 paper types, 5 citation formats, bilingual abstracts, LaTeX/DOCX-via-Pandoc/PDF output. Style Calibration + Writing Quality Check + Anti-Patterns with IRON RULE markers. Triggers: write paper, academic paper, guide my paper, parse reviews, AI disclosure, 寫論文, 學術論文, 引導我寫論文, 審查意見.",
+    "file": "academic-research-skills-main\\academic-research-skills-main\\academic-paper\\SKILL.md"
+  },
+  {
+    "repo": "academic-research-skills-main",
+    "name": "academic-paper-reviewer",
+    "desc": "Multi-perspective academic paper review with dynamic reviewer personas. Simulates 5 independent reviewers (EIC + 3 peer reviewers + Devil's Advocate) with field-specific expertise. Supports full review, re-review (verification), quick assessment, methodology focus, Socratic guided, and calibration modes. Triggers on: review paper, peer review, manuscript review, referee report, review my paper, critique paper, simulate review, editorial review, calibrate reviewer, reviewer calibration, measure reviewer accuracy.",
+    "file": "academic-research-skills-main\\academic-research-skills-main\\academic-paper-reviewer\\SKILL.md"
+  },
+  {
+    "repo": "academic-research-skills-main",
+    "name": "academic-pipeline",
+    "desc": "Orchestrator for the full academic research pipeline: research -> write -> integrity check -> review -> revise -> re-review -> re-revise -> final integrity check -> finalize. Coordinates deep-research, academic-paper, and academic-paper-reviewer into a seamless 10-stage workflow with mandatory integrity verification, two-stage peer review, and reproducible quality gates. Triggers on: academic pipeline, research to paper, full paper workflow, paper pipeline, end-to-end paper, research-to-publication, complete paper workflow.",
+    "file": "academic-research-skills-main\\academic-research-skills-main\\academic-pipeline\\SKILL.md"
+  },
+  {
+    "repo": "academic-research-skills-main",
+    "name": "deep-research",
+    "desc": "Universal deep research agent team. 13-agent pipeline for rigorous academic research on any topic. 7 modes: full research, quick brief, paper review, lit-review, fact-check, Socratic guided research dialogue, and systematic review with optional meta-analysis. Covers research question formulation, Socratic mentoring, methodology design, systematic literature search, source verification, cross-source synthesis, risk of bias assessment, meta-analysis, APA 7.0 report compilation, editorial review, devil's advocate challenges, ethics review, and post-research literature monitoring. Triggers on: research, deep research, literature review, systematic review, meta-analysis, PRISMA, evidence synthesis, fact-check, guide my research, help me think through, 研究, 深度研究, 文獻回顧, 文獻探討, 系統性回顧, 後設分析, 事實查核, 引導我的研究, 幫我釐清, 幫我想想, 我不確定要研究什麼, 研究方向, 研究主題.",
+    "file": "academic-research-skills-main\\academic-research-skills-main\\deep-research\\SKILL.md"
+  },
+  {
+    "repo": "andrej-karpathy-skills-main",
+    "name": "karpathy-guidelines",
+    "desc": "Behavioral guidelines to reduce common LLM coding mistakes. Use when writing, reviewing, or refactoring code to avoid overcomplication, make surgical changes, surface assumptions, and define verifiable success criteria.",
+    "file": "andrej-karpathy-skills-main\\andrej-karpathy-skills-main\\skills\\karpathy-guidelines\\SKILL.md"
+  },
+  {
+    "repo": "embedded-skills-main",
+    "name": "agent-log-helper",
+    "desc": "A guidance skill for integrating the agent_log logging system into Keil/MDK projects. Triggers: (1) User says \"add agent_log\", \"add logging system\", (2) User needs structured logging in Keil project, (3) User wants to add log output but doesn't know where to start, (4) User needs log initialization template or tick function implementation. Even if user just says \"add log\" or \"use RTT logging\", this skill should be used.",
+    "file": "embedded-skills-main\\agent-log-helper\\SKILL.md"
+  },
+  {
+    "repo": "embedded-skills-main",
+    "name": "arm-tools-chain",
+    "desc": "ARM MCU development full-process orchestration skill. Must read this file first when performing any ARM/Keil/MDK/STM32/GD32 related development tasks to determine execution order and strategy. Applicable scenarios: using ARM toolchain, developing new features, adding logs, compiling and flashing, debugging and viewing logs, full-process development, etc. Keywords: Keil, MDK, ARM, STM32, GD32, uvprojx, compile, flash, RTT, log, development.",
+    "file": "embedded-skills-main\\arm-tools-chain\\SKILL.md"
+  },
+  {
+    "repo": "embedded-skills-main",
+    "name": "jlink-download",
+    "desc": "Use J-Link debugger to flash firmware (.bin or .hex) to ARM Cortex-M microcontrollers, supporting GD32/STM32 and other chips. Trigger scenarios: (1) Flash firmware to microcontroller, (2) User mentions \"flash\", \"burn\", \"download firmware\", \"download\", (3) Need to write compiled .bin or .hex file to chip, (4) Program target board via J-Link. Even if user just says \"flash it\" or \"burn the chip\", this skill should be used.",
+    "file": "embedded-skills-main\\jlink-download\\SKILL.md"
+  },
+  {
+    "repo": "embedded-skills-main",
+    "name": "jlink-rtt",
+    "desc": "Read SEGGER RTT log output in real-time via J-Link debugger, supporting auto-scan of RTT control block addresses, applicable for debugging GD32/STM32 and other ARM Cortex-M microcontrollers. Trigger scenarios: (1) Read RTT debug logs from microcontroller, (2) User mentions \"RTT\", \"view logs\", \"read serial\" (RTT scenario), \"real-time logs\", (3) Need to view output information when debugging microcontroller programs, (4) Using features similar to SEGGER RTT Viewer. Even if user just says \"see what the microcontroller prints\" or \"read RTT\", this skill should be used.",
+    "file": "embedded-skills-main\\jlink-rtt\\SKILL.md"
+  },
+  {
+    "repo": "embedded-skills-main",
+    "name": "keil-build",
+    "desc": "Compile Keil MDK projects (.uvprojx) via command line using Keil UV4 compiler, supporting incremental build and full rebuild, and parse build results. Trigger scenarios: (1) Compile Keil/MDK ARM project, (2) User mentions \"build\", \"compile\", \"construct\" project, (3) Need to check if project has build errors or warnings, (4) Need to compile before flashing firmware. Even if user just says \"compile it for me\" or \"build this project\", this skill should be used.",
+    "file": "embedded-skills-main\\keil-build\\SKILL.md"
+  },
+  {
+    "repo": "embedded-skills-main",
+    "name": "keil-parser",
+    "desc": "Parse Keil MDK project files (.uvprojx), extract macro definitions, include paths, and source file lists. Trigger scenarios: (1) Need to read or analyze Keil project configuration, (2) Query project's macro definitions (defines), header file paths (include paths), source file list, (3) Need to understand project structure before compiling, flashing, etc., (4) User mentions .uvprojx file and wants to know its contents. Even if user just says \"check project configuration\" or \"analyze this Keil project\", this skill should be used.",
+    "file": "embedded-skills-main\\keil-parser\\SKILL.md"
+  },
+  {
+    "repo": "embedded-skills-main",
+    "name": "keil-uvprojx-modifier",
+    "desc": "Use this skill to operate Keil MDK's .uvprojx project files. Applicable scenarios: list all Groups and files in project, add source files to specified Group (.c/.cpp/.s/.asm/.lib/.h etc.), remove files from project, create or delete Groups, manage include paths (add/remove/list). Use this skill when user mentions Keil, uvprojx, MDK project file management, or needs batch modification of Keil project structure.",
+    "file": "embedded-skills-main\\keil-modifier\\SKILL.md"
+  },
+  {
+    "repo": "explore-claude-code-main",
+    "name": "build-agent",
+    "desc": "Builds new Claude Code agents with consistent structure, enforced standards, and project-aware configuration. Use when creating a new agent, when the user describes a specialised role they want delegated to, or when discussing team composition.",
+    "file": "explore-claude-code-main\\explore-claude-code-main\\.claude\\skills\\build-agent\\SKILL.md"
+  },
+  {
+    "repo": "explore-claude-code-main",
+    "name": "build-skill",
+    "desc": "Builds new Claude Code skills with consistent structure, enforced standards, and project-aware configuration. Use when creating a new skill, when the user describes a workflow they want automated, or when the user says they want a new slash command.",
+    "file": "explore-claude-code-main\\explore-claude-code-main\\.claude\\skills\\build-skill\\SKILL.md"
+  },
+  {
+    "repo": "explore-claude-code-main",
+    "name": "core-brainstorm",
+    "desc": "Collaborative brainstorming mode for thinking through problems, ideas, and features before planning. Use when the user wants to discuss, explore ideas, or think through a problem without writing code.",
+    "file": "explore-claude-code-main\\explore-claude-code-main\\.claude\\skills\\core-brainstorm\\SKILL.md"
+  },
+  {
+    "repo": "explore-claude-code-main",
+    "name": "frontend-design",
+    "desc": "Create distinctive, production-grade frontend interfaces with high design quality. Use this skill when the user asks to build web components, pages, or applications. Generates creative, polished code that avoids generic AI aesthetics.",
+    "file": "explore-claude-code-main\\explore-claude-code-main\\.claude\\skills\\frontend-design\\SKILL.md"
+  },
+  {
+    "repo": "explore-claude-code-main",
+    "name": "my-skill",
+    "desc": "What this skill does and when to use it. Claude reads this to decide relevance. Include keywords users would naturally say.",
+    "file": "explore-claude-code-main\\explore-claude-code-main\\site\\content\\.claude\\skills\\my-skill\\SKILL.md"
+  },
+  {
+    "repo": "skillshare-main",
+    "name": "skillshare",
+    "desc": "|",
+    "file": "skillshare-main\\skillshare-main\\skills\\skillshare\\SKILL.md"
+  },
+  {
+    "repo": "skillshare-main",
+    "name": "skillshare-changelog",
+    "desc": ">-",
+    "file": "skillshare-main\\skillshare-main\\.skillshare\\skills\\skillshare-changelog\\SKILL.md"
+  },
+  {
+    "repo": "skillshare-main",
+    "name": "skillshare-cli-e2e-test",
+    "desc": ">-",
+    "file": "skillshare-main\\skillshare-main\\.skillshare\\skills\\skillshare-cli-e2e-test\\SKILL.md"
+  },
+  {
+    "repo": "skillshare-main",
+    "name": "skillshare-codebase-audit",
+    "desc": ">-",
+    "file": "skillshare-main\\skillshare-main\\.skillshare\\skills\\skillshare-codebase-audit\\SKILL.md"
+  },
+  {
+    "repo": "skillshare-main",
+    "name": "skillshare-devcontainer",
+    "desc": ">-",
+    "file": "skillshare-main\\skillshare-main\\.skillshare\\skills\\skillshare-devcontainer\\SKILL.md"
+  },
+  {
+    "repo": "skillshare-main",
+    "name": "skillshare-implement-feature",
+    "desc": ">-",
+    "file": "skillshare-main\\skillshare-main\\.skillshare\\skills\\skillshare-implement-feature\\SKILL.md"
+  },
+  {
+    "repo": "skillshare-main",
+    "name": "skillshare-release",
+    "desc": ">-",
+    "file": "skillshare-main\\skillshare-main\\.skillshare\\skills\\skillshare-release\\SKILL.md"
+  },
+  {
+    "repo": "skillshare-main",
+    "name": "skillshare-ui-website-style",
+    "desc": ">-",
+    "file": "skillshare-main\\skillshare-main\\.skillshare\\skills\\skillshare-ui-website-style\\SKILL.md"
+  },
+  {
+    "repo": "skillshare-main",
+    "name": "skillshare-update-docs",
+    "desc": ">-",
+    "file": "skillshare-main\\skillshare-main\\.skillshare\\skills\\skillshare-update-docs\\SKILL.md"
+  }
+]

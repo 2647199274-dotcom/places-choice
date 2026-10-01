@@ -1,0 +1,45 @@
+        <script>
+            var seqid = "4a3bc75a081c56f728564a2bdc3b220a5833b88584b61381647e02a0e11cb3d223b55c9d5814db77cf779f2745919b25a63ee73458cd2ab0da05f4d5b941b8c480d60dc15e112cf758caf4724c5456191be7fb93e79e790d164cdb5e799276dc__captcha"
+        </script>
+        <script src="https://ssl.captcha.qq.com/TCaptcha.js"></script>
+        <script>
+            var captcha = new TencentCaptcha('2017163193', function(res){
+                var captchaResult = []
+                captchaResult.push(res.ret)
+
+                if(res.ret === 0){
+                    captchaResult.push(res.ticket)
+                    captchaResult.push(res.randstr)
+                    captchaResult.push(seqid)
+                }
+
+                var content = captchaResult.join('\n')
+                loadXMLDoc("/WafCaptcha", content)
+            })
+
+            function loadXMLDoc(servPath, content) {
+                var xmlhttp = null;
+                if (window.XMLHttpRequest) {
+                    xmlhttp = new XMLHttpRequest();
+                }
+                else if (window.ActiveXObject) {
+                    xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+                }
+
+                if (xmlhttp != null) {
+                    xmlhttp.open("POST", servPath, true);
+                    xmlhttp.send(content);
+                    xmlhttp.onreadystatechange = function() {
+                        if (xmlhttp.readyState == 4) {
+                            if (xmlhttp.status == 200) {
+                                window.location.reload(true)
+                            }
+                        }
+                    }
+                }
+            }
+
+            captcha.show()
+
+        </script>
+    

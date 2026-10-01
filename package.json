@@ -1,0 +1,48 @@
+{
+  "name": "trip-roulette",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "出去玩 · 地点选择转盘（高德官方 API 采集 + 多模式抽签转盘）",
+  "scripts": {
+    "seed": "node seed/build-seed.mjs",
+    "draw": "node src/cli/draw.ts",
+    "categories": "node src/cli/draw.ts --list-categories",
+    "collect": "node src/cli/collect.ts",
+    "api": "node src/server/index.ts",
+    "web": "vite --config web/vite.config.ts",
+    "build:web": "vite build --config web/vite.config.ts",
+    "apk:init": "cap add android",
+    "apk:sync": "vite build --config web/vite.config.ts && cap sync android",
+    "apk:build": "cd android && gradlew.bat assembleDebug",
+    "typecheck": "tsc --noEmit",
+    "test:collector": "node tests/verify-collector.mjs",
+    "test:draw": "node tests/verify-draw.mjs",
+    "test:region": "node tests/verify-region.mjs",
+    "test:china": "node tests/verify-china.mjs",
+    "test:web": "node tests/verify-web.mjs",
+    "test:local": "node tests/verify-local.mjs",
+    "test": "npm run typecheck && npm run test:draw && npm run test:region && npm run test:china && npm run test:collector",
+    "test:probe": "node tests/probe-apis.mjs && node tests/probe-round2.mjs && node tests/probe-round3.mjs"
+  },
+  "dependencies": {
+    "@capacitor/android": "^7.4.3",
+    "@capacitor/core": "^7.4.3",
+    "@fastify/static": "^10.1.5",
+    "better-sqlite3": "^13.0.3",
+    "fastify": "^5.12.5"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^7.4.3",
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^24.10.1",
+    "@types/react": "^19.2.2",
+    "@types/react-dom": "^19.2.2",
+    "@vitejs/plugin-react": "^5.1.0",
+    "playwright-core": "^1.63.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "typescript": "^5.9.3",
+    "vite": "^7.2.2"
+  }
+}

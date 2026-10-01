@@ -1,0 +1,19 @@
+[link] 200   90080B A1 高德网页版POI链接(需poiid) -> final=https://www.amap.com/place/B023B0A6VD 
+[link] 200   90080B A2 高德URI-标记点(手机/PC通用,可唤起App) -> final=https://ditu.amap.com/regeo?lng=120.1551&lat=30.2741&name=%E8%A5%BF%E6%B9%96&src=mypage&callnative=1&innersrc=uriapi 
+[link] 200   90080B A3 高德URI-搜索(最稳,无需poiid) -> final=https://ditu.amap.com/search?query=%E7%81%AB%E9%94%85&city=%E6%9D%AD%E5%B7%9E&src=uriapi&callnative=0&innersrc=uriapi 
+[link] 200   90080B A4 高德短链分享(需登录态生成) -> final=https://ditu.amap.com/ 
+[link] 200   90080B A5 高德导航链接 -> final=https://ditu.amap.com/dir?type=car&policy=2&to%5Blnglat%5D=120.1551,30.2741&to%5Bname%5D=%E8%A5%BF%E6%B9%96&src=mypage&innersrc=uriapi 
+[rest] 200 B1 关键字搜索 v3/place/text :: {"status":"0","info":"INVALID_USER_KEY","infocode":"10001"} 
+[rest] 200 B2 周边搜索 v3/place/around :: {"status":"0","info":"INVALID_USER_KEY","infocode":"10001"} 
+[rest] 200 B3 关键字搜索 v5/place/text(新版) :: {"status":"0","info":"INVALID_USER_KEY","infocode":"10001"} 
+[rest] 200 B4 行政区划 v3/config/district :: {"status":"0","info":"INVALID_USER_KEY","infocode":"10001"} 
+[rest] 200 B5 地理编码 v3/geocode/geo :: {"status":"0","info":"INVALID_USER_KEY","infocode":"10001"} 
+[bypass] 200  100932B json=false C1 bing搜索site:amap.com/place 杭州火锅 :: <!DOCTYPE html><html dir="ltr" lang="zh" xml:lang="zh" xmlns="http://www.w3.org/1999/xhtml" xmlns:Web="http://schemas.live.com/Web/"><script type="text/javascri 
+         bing 提取到 poiid: []
+[bypass] 200    9453B json=false C2 高德分享页 m.amap.com :: <!doctype html><!-- ________ ___ ___ _________ ________ ________ ________ ___ ___ ___ |\ __ \|\ \|\ \|\___ ___\\ __ \|\ ___ \|\ __ \|\ \ / /|\ \ \ \ \|\ \ \ \\\ 
+[bypass] 200   90080B json=false C3 高德POI搜索开放页(免key网页) :: <!DOCTYPE html> <html lang="zh-CN"> <head> <meta name="aplus-core" content="aplus.js"> <meta name="aplus-waiting" content="MAN"> <meta charset="UTF-8"/> <script 
+[bypass] 200   84928B json=false C4 高德地点详情API(内部) ::  <!DOCTYPE html> <html> <head> <meta charset="utf-8"> <meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-sca 
+[bypass] 200   84918B json=false C5 高德tip搜索API(内部) ::  <!DOCTYPE html> <html> <head> <meta charset="utf-8"> <meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-sca 
+[osm]  504     695B D1 overpass kumi :: <?xml version="1.0" encoding="UTF-8"?> <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"> <html xmlns="http://www.w3.org/1999/xhtml" xml:lang 
+[osm]  200    1771B D2 overpass main GET :: { "version": 0.6, "generator": "Overpass API 0.7.62.11 87bfad18", "osm3s": { "timestamp_osm_base": "2026-10-01T09:07:04Z", "copyright": "The data included in this document is from www.openstreetmap.or 
+[osm]  ERR       0B D3 nominatim ::  TypeError: fetch failed
