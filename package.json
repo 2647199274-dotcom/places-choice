@@ -11,6 +11,7 @@
     "collect": "node src/cli/collect.ts",
     "collect:areas": "node src/cli/collect-areas.ts",
     "export:static": "node scripts/export-static-dataset.mjs",
+    "dedupe": "node scripts/dedupe-seed.mjs",
     "icons": "node scripts/generate-icons.mjs",
     "serve:dist": "node scripts/serve-dist.mjs",
     "api": "node src/server/index.ts",

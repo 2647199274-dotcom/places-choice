@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  api, type ApiArea, type ApiCategory, type ApiCity, type ApiDrawResult, type ApiPlace, type ApiProvince,
-  type AreaDimension, type AreaSelection, type DrawScope,
+  api, normalizePlaces, type ApiArea, type ApiCategory, type ApiCity, type ApiDrawResult, type ApiPlace,
+  type ApiProvince, type AreaDimension, type AreaSelection, type DrawScope,
 } from './api.ts';
 import {
   addLocalRecent, addLocalVisited, datasetAgeLabel, loadDataset, localRecentIds, localVisitedIds, saveDataset,
@@ -88,13 +88,15 @@ export default function App() {
         const cached: CachedDataset = {
           generatedAt: d.generatedAt, categories: d.categories, requiredIds: d.requiredIds,
           cities: d.cities, provinces: d.provinces, districts: d.districts,
-          areas: d.areas as CachedDataset['areas'], places: d.places,
+          areas: d.areas as CachedDataset['areas'],
+          places: normalizePlaces(d.places),   // 静态快照是精简格式，这里统一还原
         };
-        saveDataset(cached);
+        // 落盘到 IndexedDB（2.8MB 的完整数据集 localStorage 装不下，会静默失败）
+        await saveDataset(cached);
         // source=static 表示数据来自构建时导出的静态快照（GitHub Pages 部署），没有后端
         apply(cached, false, d.source === 'static' || d.source === 'seed');
       } catch {
-        const local = loadDataset();
+        const local = await loadDataset();
         if (local) {
           // 两条路都不通（静态部署的后端 404 / 真离线）→ 用本地缓存数据
           apply(local, true, staticHostLike());
@@ -221,7 +223,7 @@ export default function App() {
       });
       return;
     } catch (e) {
-      const cached = loadDataset();
+      const cached = await loadDataset();
       if (!cached) {
         setSpinning(false);
         setError((e as Error).message);

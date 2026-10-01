@@ -111,14 +111,61 @@ try {
   console.log('📦 数据来源：data/seed-hangzhou.json');
 }
 
+/**
+ * 精简序列化：静态文件要下到手机里，不能带一堆前端用不到的字段。
+ * 去掉：categoryLabel/categoryIcon（前端按 categoryId 本地查）、address、date、
+ *      markerUrl/naviUrl/navi 相关的固定推导（前端 amapLinks() 会重新拼）、photo（列表不展示）。
+ * 保留：抽签判定 + 结果卡 + 区域筛选 + 跳转高德 所需的全部字段。
+ * 实测：13.9MB → 约 3MB。
+ */
+function compactPlace(p) {
+  return {
+    id: p.id,
+    n: p.name,
+    c: p.categoryId,
+    ca: p.cityAdcode,
+    ra: p.regionAdcode,
+    cy: p.city,
+    d: p.district,
+    lng: p.lng,
+    lat: p.lat,
+    r: p.rating,
+    p: p.cost,
+    w: p.why,
+    ba: p.businessArea || '',
+    poi: p.amapPoiId || '',
+    cp: p.coordPrecision === 'exact' ? 1 : 0,
+  };
+}
+
+function compactDataset(d) {
+  return {
+    generatedAt: d.generatedAt,
+    source: d.source,
+    compact: true,
+    categories: d.categories.map((c) => ({
+      id: c.id, label: c.label, icon: c.icon, group: c.group,
+      required: c.required, alwaysInRandom: c.alwaysInRandom, weight: c.weight, desc: c.desc,
+    })),
+    requiredIds: d.requiredIds,
+    cities: d.cities,
+    provinces: d.provinces,
+    districts: d.districts,
+    areas: d.areas,
+    places: d.places.map(compactPlace),
+  };
+}
+
+const compact = compactDataset(dataset);
 fs.mkdirSync(OUT_DIR, { recursive: true });
-fs.writeFileSync(OUT_FILE, JSON.stringify(dataset), 'utf8');
+fs.writeFileSync(OUT_FILE, JSON.stringify(compact), 'utf8');
 
 const exact = dataset.places.filter((p) => p.coordPrecision === 'exact').length;
 const withPoi = dataset.places.filter((p) => p.amapPoiId).length;
 const meta = {
   generatedAt: dataset.generatedAt,
   source: dataset.source,
+  compact: true,
   placeCount: dataset.places.length,
   cityCount: dataset.cities.length,
   categoryCount: dataset.categories.length,

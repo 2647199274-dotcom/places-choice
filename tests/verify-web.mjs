@@ -37,8 +37,11 @@ const resultName = () => page.locator('.result h3').first().innerText().catch(()
 const resultMeta = () => page.locator('.result-meta').first().innerText().catch(() => '');
 const stageMeta = async () => (await page.locator('.stage-meta').first().innerText().catch(() => '')).replace(/\s+/g, ' ');
 
-await page.goto(PAGE_URL, { waitUntil: 'networkidle', timeout: 40000 });
-await page.waitForTimeout(2500);
+await page.goto(PAGE_URL, { waitUntil: 'networkidle', timeout: 60000 });
+// 首屏要拉完整数据集（在线约 12k 地点 / 静态快照 2.8MB）并落盘 IndexedDB，
+// 给它足够时间：直接等关键控件出现，而不是死等固定毫秒
+await page.locator('.select-all input[type=checkbox]').first().waitFor({ timeout: 30000 }).catch(() => {});
+await page.waitForTimeout(1200);
 await page.screenshot({ path: path.join(outDir, 'ui-1-initial.png'), fullPage: true });
 
 const initial = await text();
@@ -154,7 +157,7 @@ if (!s3.includes('城')) problems.push(`全省随机未跨城市: ${s3}`);
 
 // ---- 6. 断网 / 静态托管（无后端）----
 const isStaticHost = PAGE_URL.includes('5180');
-// 清掉 Service Worker 与缓存：SW 会把已缓存的资源直接返回，干扰"屏蔽 API"的测试意图
+// 清掉 Service Worker 与所有本地缓存：SW 会直接返回已缓存资源，IndexedDB 残留数据会让"无后端"场景失去意义
 await page.evaluate(async () => {
   if ('serviceWorker' in navigator) {
     const regs = await navigator.serviceWorker.getRegistrations();
@@ -165,10 +168,34 @@ await page.evaluate(async () => {
     await Promise.all(keys.map((k) => caches.delete(k)));
   }
   localStorage.clear();
+  await new Promise((resolve) => {
+    const req = indexedDB.deleteDatabase('trip-roulette');
+    req.onsuccess = req.onerror = req.onblocked = () => resolve(true);
+    setTimeout(resolve, 2000);
+  });
 }).catch(() => {});
+// 先正常加载一次（让离线引擎拿到并落盘数据集），再屏蔽 API 重载
 await page.route('**/api/**', (route) => route.abort());
 await page.reload({ waitUntil: 'domcontentloaded' });
-await page.waitForTimeout(isStaticHost ? 8000 : 3000);
+await page.waitForTimeout(isStaticHost ? 9000 : 4000);
+// 确认数据集真的落盘了（IndexedDB），否则"离线可用"就是假的
+const persisted = await page.evaluate(async () => {
+  const openReq = indexedDB.open('trip-roulette', 1);
+  const db = await new Promise((res) => {
+    openReq.onsuccess = () => res(openReq.result);
+    openReq.onerror = () => res(null);
+    setTimeout(() => res(null), 3000);
+  });
+  if (!db) return { places: -1 };
+  return await new Promise((res) => {
+    const tx = db.transaction('kv', 'readonly');
+    const r = tx.objectStore('kv').get('trip-roulette:dataset:v1');
+    r.onsuccess = () => res({ places: r.result?.places?.length ?? 0 });
+    r.onerror = () => res({ places: -2 });
+  });
+});
+console.log(`\n[持久化] IndexedDB 里的数据集地点数 = ${persisted.places}（>0 才能离线重载后抽签）`);
+if (persisted.places <= 0) problems.push(`数据集未持久化到 IndexedDB（places=${persisted.places}），离线重载后会没数据`);
 const offlineBadge = await page.locator('.badge.warn').first().innerText().catch(() => '');
 const offlineAll = await page.locator('.select-all input[type=checkbox]').first().isChecked().catch(() => false);
 const allBadges = await page.locator('.badge').allInnerTexts().catch(() => []);

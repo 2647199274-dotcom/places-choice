@@ -254,6 +254,12 @@ export const ROW_TO_PLACE = (r: any): Place => ({
   opentime: r.opentime ?? '', photo: r.photo ?? '',
 });
 
+/**
+ * 被真实数据取代的行（去重脚本标记的 source='seed-dup'）不参与任何查询。
+ * 它们仍留在库里便于回查/回滚，只是不再进入抽签候选。
+ */
+const NOT_SUPERSEDED = `AND source <> 'seed-dup'`;
+
 /** 按城市取候选：city_adcode 优先，兼容 region_adcode（老数据/种子数据） */
 export async function getPlaces(cityAdcode: string, categoryIds: string[]): Promise<Place[]> {
   if (!cityAdcode || categoryIds.length === 0) return [];
@@ -261,7 +267,9 @@ export async function getPlaces(cityAdcode: string, categoryIds: string[]): Prom
   if (db) {
     const ph = categoryIds.map(() => '?').join(',');
     const rows = db
-      .prepare(`SELECT * FROM place WHERE (city_adcode = ? OR region_adcode = ?) AND category_id IN (${ph})`)
+      .prepare(
+        `SELECT * FROM place WHERE (city_adcode = ? OR region_adcode = ?) AND category_id IN (${ph}) ${NOT_SUPERSEDED}`,
+      )
       .all(cityAdcode, cityAdcode, ...categoryIds);
     return rows.map(ROW_TO_PLACE);
   }
@@ -284,7 +292,7 @@ export async function getPlacesMulti(cityAdcodes: string[], categoryIds: string[
       .prepare(
         `SELECT * FROM place
          WHERE (city_adcode IN (${phCity}) OR region_adcode IN (${phCity2}))
-           AND category_id IN (${phCat})`,
+           AND category_id IN (${phCat}) ${NOT_SUPERSEDED}`,
       )
       .all(...cityAdcodes, ...cityAdcodes, ...categoryIds);
     return rows.map(ROW_TO_PLACE);
@@ -312,10 +320,10 @@ export async function countPlaces(): Promise<{ total: number; byCategory: Record
   const db = await openDb();
   if (db) {
     const byCategory: Record<string, number> = {};
-    for (const r of db.prepare('SELECT category_id c, COUNT(*) n FROM place GROUP BY category_id').all()) byCategory[r.c] = r.n;
+    for (const r of db.prepare(`SELECT category_id c, COUNT(*) n FROM place WHERE 1=1 ${NOT_SUPERSEDED} GROUP BY category_id`).all()) byCategory[r.c] = r.n;
     const byCity: Record<string, number> = {};
-    for (const r of db.prepare('SELECT city c, COUNT(*) n FROM place GROUP BY city').all()) byCity[r.c] = r.n;
-    const total = db.prepare('SELECT COUNT(*) n FROM place').get().n as number;
+    for (const r of db.prepare(`SELECT city c, COUNT(*) n FROM place WHERE 1=1 ${NOT_SUPERSEDED} GROUP BY city`).all()) byCity[r.c] = r.n;
+    const total = db.prepare(`SELECT COUNT(*) n FROM place WHERE 1=1 ${NOT_SUPERSEDED}`).get().n as number;
     return { total, byCategory, byCity };
   }
   const seed = loadSeed();
@@ -349,7 +357,7 @@ export async function getCitySummaries(): Promise<CitySummary[]> {
     const rows = db
       .prepare(
         `SELECT COALESCE(NULLIF(city_adcode, ''), region_adcode) adcode, city, category_id, COUNT(*) n
-         FROM place GROUP BY adcode, category_id`,
+         FROM place WHERE 1=1 ${NOT_SUPERSEDED} GROUP BY adcode, category_id`,
       )
       .all();
     const map = new Map<string, CitySummary>();

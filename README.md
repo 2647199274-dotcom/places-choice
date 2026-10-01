@@ -59,8 +59,7 @@ npm run draw -- --scope province --count 3                        # 用真实数
 参考你自己的 `mistydew/e-invoice-stock-form`（纯静态 + Actions 发布 + PWA），我们照同一套做法：
 
 ```powershell
-npm run export:static                 # 导出静态数据快照到 web/public/data/dataset.json
-$env:VITE_BASE="/places-choice/"; npm run build:web    # 子路径构建
+npm run export:static                 # 导出静态数据快照到 web/public/data/dataset.json（精简格式，约 2.8MB）
 npm run serve:dist                    # 本地模拟 Pages（会故意让 /api 返回 404，验证静态回退）
 ```
 
@@ -69,10 +68,32 @@ npm run serve:dist                    # 本地模拟 Pages（会故意让 /api �
 **线上地址：`https://2647199274-dotcom.github.io/places-choice/`**（手机浏览器打开 → 菜单「添加到主屏幕」→ 像 App 一样用）
 
 ⚠️ 首次部署前需要在仓库里做一次性设置：**Settings → Pages → Source 选 `GitHub Actions`**。
+（个人账号仓库不支持工作流自助开启，`configure-pages` 的 `enablement: true` 只对组织仓库有效。）
 
-细节与排错见 `.dsh/skills/gh-pages-deploy/SKILL.md` 与 `docs/03-Android打包说明.md`。
+### 构建 base 路径的坑（踩过）
+
+- **Pages 部署**：必须 `VITE_BASE=/places-choice/`（CI 里已自动设置），否则资源 404 → 白屏
+- **本地 / APK / 普通托管**：用**根路径**构建（`npm run build:web` 不带 VITE_BASE）
+- 同一份 `web/dist` 不能同时服务两种场景。所以本地跑 `npm run api` 前，先做一次根路径构建；
+  我为此在 `tests/verify-web.mjs` 里把首屏等待改成"等控件出现"，避免数据量大时误判。
+
 线上没有后端，跑的是**静态数据快照**：本地采到新数据后 `npm run export:static` 再 push，线上就更新。
 高德 Key 只在本地 `.env`（已 gitignore），**不会**出现在线上或仓库里。
+
+## 数据维护
+
+```powershell
+npm run collect -- --check                                   # 验证 Key 与 v3 分页
+npm run collect -- --city 杭州市 --adcode 330100 --all --pages 3
+npm run collect -- --scope zhejiang --all --pages 2          # 浙江 11 市
+npm run collect:areas -- --city 杭州市 --adcode 330100        # 地铁站 + 商场 + 重建地铁关联
+npm run dedupe -- --dry                                      # 查看种子数据与真实数据的重复（不修改）
+npm run dedupe                                               # 标记重复的种子行为 seed-dup（可回滚）
+npm run export:static                                        # 导出线上用的静态快照
+```
+
+数据现状：**11 城 / 11973 条**（高德真实 11326 + 人工种子 647），评分覆盖 99%、商圈 59%、
+带高德 poiid 100%、精确坐标 100%。真实数据优先，重复的种子行会被标记为 `seed-dup` 不再参与抽签。
 
 ## 验证（都是真跑出来的，不是"应该没问题"）
 

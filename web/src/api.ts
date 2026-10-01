@@ -135,16 +135,61 @@ async function j<T>(url: string, init?: RequestInit): Promise<T> {
   return body as T;
 }
 
+/** 静态快照是"精简格式"（字段名压缩过，体积约为完整格式的 1/4），这里还原成前端通用结构 */
+export interface CompactPlace {
+  id: string; n: string; c: string; ca: string; ra: string; cy: string; d: string;
+  lng: number; lat: number; r: number; p: number; w: string; ba: string; poi: string; cp: 0 | 1;
+}
+
+export function hydrateCompactPlace(cp: CompactPlace): ApiPlace {
+  const hasCoord = cp.lng !== 0 || cp.lat !== 0;
+  return {
+    id: cp.id,
+    name: cp.n,
+    categoryId: cp.c,
+    cityAdcode: cp.ca,
+    regionAdcode: cp.ra,
+    city: cp.cy,
+    district: cp.d,
+    address: `${cp.cy}${cp.d}`,
+    lng: cp.lng,
+    lat: cp.lat,
+    rating: cp.r,
+    cost: cp.p,
+    why: cp.w,
+    businessArea: cp.ba,
+    amapPoiId: cp.poi || null,
+    coordPrecision: cp.cp ? 'exact' : 'approx',
+    uriSearchUrl: `https://uri.amap.com/search?keyword=${encodeURIComponent(cp.n)}&city=${encodeURIComponent(cp.cy)}&view=map&callnative=0`,
+    markerUrl: hasCoord
+      ? `https://uri.amap.com/marker?position=${cp.lng.toFixed(6)},${cp.lat.toFixed(6)}&name=${encodeURIComponent(cp.n)}&coordinate=gaode&callnative=1`
+      : null,
+    naviUrl: hasCoord
+      ? `https://uri.amap.com/navigation?to=${cp.lng.toFixed(6)},${cp.lat.toFixed(6)},${encodeURIComponent(cp.n)}&mode=car&policy=1&src=trip-roulette`
+      : null,
+  } as ApiPlace;
+}
+
 export interface DatasetPayload {
   generatedAt: string;
   source?: string;
+  /** 精简格式标记（静态快照为 true，后端 /api/dataset 为完整格式） */
+  compact?: boolean;
   categories: ApiCategory[];
   requiredIds: string[];
   cities: ApiCity[];
   provinces: ApiProvince[];
   districts: { adcode: string; name: string; parent: string }[];
   areas: Record<string, Record<string, ApiArea[]>>;
-  places: ApiPlace[];
+  places: (ApiPlace | CompactPlace)[];
+}
+
+/** 统一把后端（完整格式）与静态快照（精简格式）都还原成 ApiPlace[] */
+export function normalizePlaces(places: (ApiPlace | CompactPlace)[]): ApiPlace[] {
+  if (places.length === 0) return [];
+  const first = places[0] as Partial<CompactPlace> & Partial<ApiPlace>;
+  // 精简格式用单字母键：n=name、c=categoryId
+  return 'n' in first && 'c' in first ? (places as CompactPlace[]).map(hydrateCompactPlace) : (places as ApiPlace[]);
 }
 
 export const api = {

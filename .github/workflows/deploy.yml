@@ -52,11 +52,22 @@ jobs:
           echo "--- data ---"; ls -la web/dist/data
           echo "--- base check ---"; head -c 400 web/dist/index.html
 
-      # enablement: true 让工作流在首次运行时自动把 Pages 源设为 GitHub Actions，
-      # 省掉"必须先去仓库设置里手动开启"这一步（权限已在上方 permissions 里声明）
+      # enablement: true 让工作流尝试自动把 Pages 源设为 GitHub Actions。
+      # 注意：个人账号仓库**不支持**自助开启（只有组织仓库可以），此时这一步会失败，
+      # 需要仓库主在 Settings → Pages → Source 选 "GitHub Actions" 一次。
       - uses: actions/configure-pages@v5
         with:
           enablement: true
+        continue-on-error: true
+
+      - name: Pages 未启用时给出明确指引
+        run: |
+          echo "::group::部署前检查"
+          echo "如果后面的 upload-pages-artifact / deploy-pages 报 'Get Pages site failed'，"
+          echo "说明仓库还没启用 Pages（个人账号仓库不支持工作流自助开启）。请打开："
+          echo "  https://github.com/${{ github.repository }}/settings/pages"
+          echo "把 Source 选为 'GitHub Actions'，然后重新运行本工作流即可。"
+          echo "::endgroup::"
 
       - uses: actions/upload-pages-artifact@v3
         with:
