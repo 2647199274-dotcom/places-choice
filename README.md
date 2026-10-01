@@ -54,6 +54,26 @@ npm run draw -- --scope province --count 3                        # 用真实数
 原始响应落盘 `data/raw/`、每次调用写入 `collect_log` 表（可查配额消耗与失败原因）。
 高德返回的是**区县** adcode，采集器会同时写入 `city_adcode`（抽签按城市查）与 `region_adcode`（区县）。
 
+## 部署到 GitHub Pages（手机上直接打开链接用）
+
+参考你自己的 `mistydew/e-invoice-stock-form`（纯静态 + Actions 发布 + PWA），我们照同一套做法：
+
+```powershell
+npm run export:static                 # 导出静态数据快照到 web/public/data/dataset.json
+$env:VITE_BASE="/places-choice/"; npm run build:web    # 子路径构建
+npm run serve:dist                    # 本地模拟 Pages（会故意让 /api 返回 404，验证静态回退）
+```
+
+推送到 `main` 后 `.github/workflows/deploy.yml` 自动构建并发布：
+
+**线上地址：`https://2647199274-dotcom.github.io/places-choice/`**（手机浏览器打开 → 菜单「添加到主屏幕」→ 像 App 一样用）
+
+⚠️ 首次部署前需要在仓库里做一次性设置：**Settings → Pages → Source 选 `GitHub Actions`**。
+
+细节与排错见 `.dsh/skills/gh-pages-deploy/SKILL.md` 与 `docs/03-Android打包说明.md`。
+线上没有后端，跑的是**静态数据快照**：本地采到新数据后 `npm run export:static` 再 push，线上就更新。
+高德 Key 只在本地 `.env`（已 gitignore），**不会**出现在线上或仓库里。
+
 ## 验证（都是真跑出来的，不是"应该没问题"）
 
 ```bash

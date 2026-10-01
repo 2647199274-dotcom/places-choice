@@ -1,0 +1,69 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # better-sqlite3 在 Linux runner 上重新编译；本项目导出数据集时若数据库不可用会自动回退种子数据
+      - run: npm ci
+
+      # 导出静态数据集（Pages 上没有后端，前端靠这个文件取数据）
+      - name: Export static dataset
+        run: node scripts/export-static-dataset.mjs
+
+      # 部署在子路径 /<repo>/ 下，base 必须与仓库名一致，否则资源 404 白屏
+      - name: Build web
+        env:
+          VITE_BASE: /${{ github.event.repository.name }}/
+        run: npm run build:web
+
+      # SPA 回退：GitHub Pages 没有 rewrite，用 404.html 兜住深链接
+      - name: SPA fallback
+        run: cp web/dist/index.html web/dist/404.html
+
+      # 关掉 Jekyll，避免忽略下划线开头的资源
+      - name: Disable Jekyll
+        run: touch web/dist/.nojekyll
+
+      - name: Diagnostic
+        run: |
+          echo "--- dist ---"; ls -la web/dist
+          echo "--- data ---"; ls -la web/dist/data
+          echo "--- base check ---"; head -c 400 web/dist/index.html
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: web/dist
+
+  deploy:
+    needs: build
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

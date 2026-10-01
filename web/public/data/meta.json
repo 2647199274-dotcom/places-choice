@@ -1,0 +1,47 @@
+{
+  "generatedAt": "2026-10-01T10:36:30.217Z",
+  "source": "sqlite",
+  "placeCount": 2355,
+  "cityCount": 11,
+  "categoryCount": 27,
+  "exactCoordCount": 1681,
+  "withPoiIdCount": 1684,
+  "areaDims": {
+    "330100": [
+      "district",
+      "businessArea",
+      "mall",
+      "metro"
+    ],
+    "330200": [
+      "district"
+    ],
+    "330300": [
+      "district"
+    ],
+    "330400": [
+      "district"
+    ],
+    "330500": [
+      "district"
+    ],
+    "330600": [
+      "district"
+    ],
+    "330700": [
+      "district"
+    ],
+    "330800": [
+      "district"
+    ],
+    "330900": [
+      "district"
+    ],
+    "331000": [
+      "district"
+    ],
+    "331100": [
+      "district"
+    ]
+  }
+}

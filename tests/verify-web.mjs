@@ -152,21 +152,40 @@ console.log(`[场景 全省随机] 抽中「${n3}」；盘面: ${s3}`);
 if (!n3) problems.push('全省随机抽签失败');
 if (!s3.includes('城')) problems.push(`全省随机未跨城市: ${s3}`);
 
-// ---- 6. 断网离线 ----
+// ---- 6. 断网 / 静态托管（无后端）----
+const isStaticHost = PAGE_URL.includes('5180');
+// 清掉 Service Worker 与缓存：SW 会把已缓存的资源直接返回，干扰"屏蔽 API"的测试意图
+await page.evaluate(async () => {
+  if ('serviceWorker' in navigator) {
+    const regs = await navigator.serviceWorker.getRegistrations();
+    await Promise.all(regs.map((r) => r.unregister()));
+  }
+  if (typeof caches !== 'undefined') {
+    const keys = await caches.keys();
+    await Promise.all(keys.map((k) => caches.delete(k)));
+  }
+  localStorage.clear();
+}).catch(() => {});
 await page.route('**/api/**', (route) => route.abort());
 await page.reload({ waitUntil: 'domcontentloaded' });
-await page.waitForTimeout(2500);
+await page.waitForTimeout(isStaticHost ? 8000 : 3000);
 const offlineBadge = await page.locator('.badge.warn').first().innerText().catch(() => '');
 const offlineAll = await page.locator('.select-all input[type=checkbox]').first().isChecked().catch(() => false);
-console.log(`\n[场景 离线] 徽标="${offlineBadge}"；离线时默认全选=${offlineAll}`);
-if (!offlineBadge.includes('离线')) problems.push('断网后未进入离线模式');
-if (!offlineAll) problems.push('离线模式下默认全选未生效');
+const allBadges = await page.locator('.badge').allInnerTexts().catch(() => []);
+console.log(`\n[场景 无后端] 徽标="${offlineBadge}"；全部徽标=${JSON.stringify(allBadges)}；默认全选=${offlineAll}`);
+if (!offlineBadge.includes('离线') && !offlineBadge.includes('静态')) {
+  problems.push(`无后端环境下未进入离线/静态模式（徽标=${JSON.stringify(allBadges)}）`);
+}
+if (!offlineAll) problems.push('离线/静态模式下默认全选未生效');
 await spin();
 const n4 = await resultName();
 const s4 = await stageMeta();
-console.log(`[场景 离线] 抽中「${n4}」；盘面: ${s4}`);
-if (!n4) problems.push('离线模式抽签失败');
-if (!s4.includes('本地计算')) problems.push(`离线抽签未标注本地计算: ${s4}`);
+console.log(`[场景 无后端] 抽中「${n4}」；盘面: ${s4}`);
+if (!n4) problems.push('无后端时抽签失败');
+if (!s4.includes('本地计算')) problems.push(`应在本地计算: ${s4}`);
+const link4 = await page.locator('.result-actions a.primary').first().getAttribute('href').catch(() => null);
+console.log(`[场景 无后端] 高德链接: ${link4}`);
+if (!link4 || !/^https:\/\/(www\.amap\.com\/place\/|uri\.amap\.com\/)/.test(link4)) problems.push(`无后端时高德链接异常: ${link4}`);
 await page.screenshot({ path: path.join(outDir, 'ui-3-offline.png'), fullPage: true });
 await page.unroute('**/api/**');
 

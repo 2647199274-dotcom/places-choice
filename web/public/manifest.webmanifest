@@ -1,0 +1,17 @@
+{
+  "name": "出去玩 · 地点选择转盘",
+  "short_name": "出去玩转盘",
+  "description": "选地区 + 选项目，转一下决定去哪家；结果可直接跳高德查看与导航",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0b0e1f",
+  "theme_color": "#6c8cff",
+  "lang": "zh-CN",
+  "icons": [
+    { "src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}

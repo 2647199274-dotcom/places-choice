@@ -114,6 +114,12 @@ export interface AreaSelection {
  */
 const API_BASE = (import.meta.env?.VITE_API_BASE ?? '').replace(/\/$/, '');
 
+/**
+ * 静态部署（GitHub Pages）时没有后端，回退读构建时导出的 /data/dataset.json。
+ * 同源路径要用 import.meta.env.BASE_URL 拼，才能在子路径（/places-choice/）下正确。
+ */
+const STATIC_DATASET_URL = `${import.meta.env?.BASE_URL ?? '/'}data/dataset.json`.replace(/([^:]\/)\/+/g, '$1');
+
 async function j<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${API_BASE}${url}`, {
     headers: { 'Content-Type': 'application/json' },
@@ -127,6 +133,18 @@ async function j<T>(url: string, init?: RequestInit): Promise<T> {
     throw new Error(msg);
   }
   return body as T;
+}
+
+export interface DatasetPayload {
+  generatedAt: string;
+  source?: string;
+  categories: ApiCategory[];
+  requiredIds: string[];
+  cities: ApiCity[];
+  provinces: ApiProvince[];
+  districts: { adcode: string; name: string; parent: string }[];
+  areas: Record<string, Record<string, ApiArea[]>>;
+  places: ApiPlace[];
 }
 
 export const api = {
@@ -153,18 +171,20 @@ export const api = {
     j<{ city: string; district?: ApiArea[]; businessArea?: ApiArea[]; mall?: ApiArea[]; metro?: ApiArea[] }>(
       `/api/areas?city=${encodeURIComponent(cityAdcode)}${categories.length ? `&categories=${categories.join(',')}` : ''}`,
     ),
-  /** 一次性拉全量数据集（前端缓存到 localStorage，供离线抽签） */
-  dataset: () =>
-    j<{
-      generatedAt: string;
-      categories: ApiCategory[];
-      requiredIds: string[];
-      cities: ApiCity[];
-      provinces: ApiProvince[];
-      districts: { adcode: string; name: string; parent: string }[];
-      areas: Record<string, Record<string, ApiArea[]>>;
-      places: ApiPlace[];
-    }>('/api/dataset'),
+  /** 一次性拉全量数据集：优先后端，静态部署时回退到构建导出的 /data/dataset.json */
+  dataset: async (): Promise<DatasetPayload> => {
+    try {
+      return await j<DatasetPayload>('/api/dataset');
+    } catch (e) {
+      const res = await fetch(STATIC_DATASET_URL, { signal: AbortSignal.timeout(15000) });
+      if (!res.ok || !(res.headers.get('content-type') ?? '').includes('json')) throw e;
+      const body = (await res.json().catch(() => null)) as DatasetPayload | null;
+      // 走到这里说明后端不可用，数据来自静态快照 —— 必须显式标记，
+      // 否则前端会以为"在线"（踩过：依赖 json 里的 source 字段，而旧快照没有该字段）
+      if (!body?.places?.length) throw e;
+      return { ...body, source: 'static' };
+    }
+  },
   markVisited: (placeId: string, note?: string) =>
     j<{ ok: boolean }>('/api/visited', { method: 'POST', body: JSON.stringify({ placeId, note }) }),
 };

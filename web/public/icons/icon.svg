@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#131834"/>
+      <stop offset="1" stop-color="#0b0e1f"/>
+    </linearGradient>
+    <linearGradient id="brand" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#6c8cff"/>
+      <stop offset="1" stop-color="#b388ff"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+
+  <!-- 转盘扇区 -->
+  <g transform="translate(256 256)">
+    <circle r="168" fill="url(#brand)" opacity="0.95"/>
+    <path d="M0 0 L0 -168 A168 168 0 0 1 145.5 -84 Z" fill="#ff6b6b"/>
+    <path d="M0 0 L145.5 -84 A168 168 0 0 1 145.5 84 Z" fill="#ffd43b"/>
+    <path d="M0 0 L145.5 84 A168 168 0 0 1 0 168 Z" fill="#51cf66"/>
+    <path d="M0 0 L0 168 A168 168 0 0 1 -145.5 84 Z" fill="#4dabf7"/>
+    <path d="M0 0 L-145.5 84 A168 168 0 0 1 -145.5 -84 Z" fill="#b197fc"/>
+    <path d="M0 0 L-145.5 -84 A168 168 0 0 1 0 -168 Z" fill="#38d9a9"/>
+    <g stroke="#0b0e1f" stroke-width="6">
+      <line x1="0" y1="0" x2="0" y2="-168"/>
+      <line x1="0" y1="0" x2="145.5" y2="-84"/>
+      <line x1="0" y1="0" x2="145.5" y2="84"/>
+      <line x1="0" y1="0" x2="0" y2="168"/>
+      <line x1="0" y1="0" x2="-145.5" y2="84"/>
+      <line x1="0" y1="0" x2="-145.5" y2="-84"/>
+    </g>
+    <circle r="168" fill="none" stroke="#eef1ff" stroke-width="10" opacity="0.85"/>
+    <circle r="54" fill="#0b0e1f" stroke="#eef1ff" stroke-width="8" opacity="0.95"/>
+    <text y="16" text-anchor="middle" font-size="58" fill="#eef1ff">🎡</text>
+  </g>
+
+  <!-- 顶部指针 -->
+  <path d="M256 34 L292 96 L220 96 Z" fill="#ffd43b" stroke="#0b0e1f" stroke-width="8" stroke-linejoin="round"/>
+</svg>

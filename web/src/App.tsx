@@ -23,6 +23,12 @@ interface AppResult {
   fromLocal: boolean;
 }
 
+/** 静态部署（含 GitHub Pages）的判断：页面路径不是根目录下的本地服务，或 URL 提示了 gh.io */
+function staticHostLike(): boolean {
+  if (typeof location === 'undefined') return false;
+  return /\.github\.io$/.test(location.hostname);
+}
+
 const DIMENSIONS: { id: AreaDimension; label: string; icon: string }[] = [
   { id: 'metro', label: '地铁', icon: '🚇' },
   { id: 'district', label: '地区', icon: '🗺️' },
@@ -36,6 +42,7 @@ export default function App() {
   const [provinces, setProvinces] = useState<ApiProvince[]>([]);
 
   const [offline, setOffline] = useState(false);
+  const [staticMode, setStaticMode] = useState(false);
   const [cacheLabel, setCacheLabel] = useState('');
   const [cachedAreas, setCachedAreas] = useState<Record<string, Record<string, ApiArea[]>>>({});
   const [stock, setStock] = useState(0);
@@ -63,7 +70,7 @@ export default function App() {
   // 初始化：优先后端；失败则用本地缓存（离线/APK）
   useEffect(() => {
     (async () => {
-      const apply = (d: CachedDataset, fromCache: boolean) => {
+      const apply = (d: CachedDataset, fromCache: boolean, isStatic = false) => {
         setCategories(d.categories);
         setCities(d.cities);
         setProvinces(d.provinces);
@@ -72,6 +79,7 @@ export default function App() {
         setSelected(new Set(d.categories.map((c) => c.id)));
         setCity([...d.cities].sort((a, b) => b.total - a.total)[0] ?? null);
         setOffline(fromCache);
+        setStaticMode(isStatic);
         setCacheLabel(datasetAgeLabel(d));
         if (d.areas) setCachedAreas(d.areas as Record<string, Record<string, ApiArea[]>>);
       };
@@ -83,11 +91,16 @@ export default function App() {
           areas: d.areas as CachedDataset['areas'], places: d.places,
         };
         saveDataset(cached);
-        apply(cached, false);
+        // source=static 表示数据来自构建时导出的静态快照（GitHub Pages 部署），没有后端
+        apply(cached, false, d.source === 'static' || d.source === 'seed');
       } catch {
         const local = loadDataset();
-        if (local) apply(local, true);
-        else setError('连不上后端，且本地没有缓存数据。请先运行 npm run api，或联网打开一次以生成本地缓存。');
+        if (local) {
+          // 两条路都不通（静态部署的后端 404 / 真离线）→ 用本地缓存数据
+          apply(local, true, staticHostLike());
+        } else {
+          setError('连不上后端，且本地没有缓存数据。请先运行 npm run api，或联网打开一次以生成本地缓存。');
+        }
       } finally {
         setLoading(false);
       }
@@ -284,8 +297,12 @@ export default function App() {
             <p className="sub">
               选地区 + 选项目 → 转一下，落到哪家就去哪家
               <span className="badge">{cities.length} 市 · {stock} 个地点</span>
-              <span className={`badge ${offline ? 'warn' : 'ok'}`}>
-                {offline ? `📴 离线（缓存 ${cacheLabel}）` : '🌐 在线'}
+              <span className={`badge ${offline || staticMode ? 'warn' : 'ok'}`}>
+                {offline
+                  ? `📴 离线（缓存 ${cacheLabel}）`
+                  : staticMode
+                    ? `📦 静态数据（${cacheLabel}）`
+                    : '🌐 在线'}
               </span>
             </p>
           </div>
@@ -516,6 +533,8 @@ export default function App() {
 
       <footer className="foot">
         地点数据来自高德开放平台 · 点击结果卡可直接跳转高德查看与导航
+        {staticMode && <> · 当前为静态数据快照（无后端），转盘在本地计算</>}
+        {offline && !staticMode && <> · 当前离线，使用本地缓存数据（{cacheLabel}）</>}
       </footer>
     </div>
   );
