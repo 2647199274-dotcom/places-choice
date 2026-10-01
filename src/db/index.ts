@@ -125,6 +125,20 @@ export async function ensureSeeded(): Promise<number> {
   if (!db) return seed.places.length;
 
   upsertRegions(seed.regions);
+
+  // 写入省级区划行（level=1）：全国化后前端要按省聚合/展示省名，不能只靠写死的浙江表。
+  // 来源：高德区划缓存 data/regions-cache.json（collect --scope china 时生成）。
+  try {
+    const cachePath = path.join(DATA_DIR, 'regions-cache.json');
+    if (fs.existsSync(cachePath)) {
+      const cache = JSON.parse(fs.readFileSync(cachePath, 'utf8').replace(/^\uFEFF/, ''));
+      const provinceRows = (cache.provinces ?? []).map((p: any) => ({
+        adcode: String(p.adcode), name: p.name, level: 1, parent: '100000', parentName: '中国',
+      }));
+      if (provinceRows.length) upsertRegions(provinceRows);
+    }
+  } catch { /* 缓存缺失不影响主流程 */ }
+
   const existing = new Set(db.prepare('SELECT id FROM place').all().map((r: any) => r.id as string));
   const seedIds = new Set(seed.places.map((p) => p.id));
 
@@ -345,15 +359,48 @@ export interface CitySummary {
   categories: string[];
 }
 
+/**
+ * 城市进入选择器的最小数据量。
+ * 采集某个城市时，高德会漏出邻近城市的 POI（真实数据，不是脏数据），
+ * 它们可能只有 1~2 条 —— 数据保留（真选到该城市可用），但默认不展示，
+ * 否则城市列表会被 138 个"只有 1 条"的城市撑爆。
+ */
+export const MIN_CITY_PLACES = 5;
+
 const CITY_PREFIX: Record<string, string> = {
   '3301': '浙江省', '3302': '浙江省', '3303': '浙江省', '3304': '浙江省', '3305': '浙江省',
   '3306': '浙江省', '3307': '浙江省', '3308': '浙江省', '3309': '浙江省', '3310': '浙江省', '3311': '浙江省',
 };
 
+/**
+ * 省份名查询：优先用"库里 regions 表里的省级行"（ensureSeeded 会写入），
+ * 再回退高德区划缓存，最后才是内置的浙江表。
+ * 全国化后不能再写死浙江，否则广东省会被显示成"其他"。
+ */
+function buildProvinceLookup(db: any): Map<string, string> {
+  const map = new Map<string, string>();
+  try {
+    for (const r of db.prepare('SELECT adcode, name FROM region WHERE level = 1').all()) {
+      map.set(String(r.adcode).slice(0, 2), r.name);
+    }
+  } catch { /* region 表可能还没建好 */ }
+  if (map.size >= 30) return map;
+  try {
+    const cachePath = path.join(DATA_DIR, 'regions-cache.json');
+    if (fs.existsSync(cachePath)) {
+      const cache = JSON.parse(fs.readFileSync(cachePath, 'utf8').replace(/^\uFEFF/, ''));
+      for (const p of cache.provinces ?? []) map.set(String(p.adcode).slice(0, 2), p.name);
+    }
+  } catch { /* 缓存不可用就用内置表 */ }
+  if (map.size === 0) for (const [prefix, name] of Object.entries(CITY_PREFIX)) map.set(prefix.slice(0, 2), name);
+  return map;
+}
+
 /** 有数据的城市清单（含每个城市可抽的分类），用于前端地区选择器与"随机城市" */
 export async function getCitySummaries(): Promise<CitySummary[]> {
   const db = await openDb();
   if (db) {
+    const provinceLookup = buildProvinceLookup(db);
     const rows = db
       .prepare(
         `SELECT COALESCE(NULLIF(city_adcode, ''), region_adcode) adcode, city, category_id, COUNT(*) n
@@ -366,27 +413,33 @@ export async function getCitySummaries(): Promise<CitySummary[]> {
       const key = r.adcode;
       if (!map.has(key)) {
         map.set(key, {
-          adcode: key, name: r.city, province: CITY_PREFIX[key.slice(0, 4)] ?? '', total: 0, categories: [],
+          adcode: key, name: r.city, province: provinceLookup.get(key.slice(0, 2)) ?? '', total: 0, categories: [],
         });
       }
       const c = map.get(key)!;
       c.total += r.n;
       c.categories.push(r.category_id);
     }
-    return [...map.values()].sort((a, b) => a.adcode.localeCompare(b.adcode));
+    return [...map.values()]
+      .filter((c) => c.total >= MIN_CITY_PLACES)
+      .sort((a, b) => a.adcode.localeCompare(b.adcode));
   }
   const seed = loadSeed();
+  const provinceLookup = new Map<string, string>();
+  for (const r of seed.regions) if (r.level === 1) provinceLookup.set(String(r.adcode).slice(0, 2), r.name);
   const map = new Map<string, CitySummary>();
   for (const p of seed.places) {
     const key = p.cityAdcode || p.regionAdcode;
     if (!map.has(key)) {
-      map.set(key, { adcode: key, name: p.city, province: CITY_PREFIX[key.slice(0, 4)] ?? '', total: 0, categories: [] });
+      map.set(key, { adcode: key, name: p.city, province: provinceLookup.get(key.slice(0, 2)) ?? '', total: 0, categories: [] });
     }
     const c = map.get(key)!;
     c.total += 1;
     if (!c.categories.includes(p.categoryId)) c.categories.push(p.categoryId);
   }
-  return [...map.values()].sort((a, b) => a.adcode.localeCompare(b.adcode));
+  return [...map.values()]
+    .filter((c) => c.total >= MIN_CITY_PLACES)
+    .sort((a, b) => a.adcode.localeCompare(b.adcode));
 }
 
 /** 打印一行统计（CLI 用） */

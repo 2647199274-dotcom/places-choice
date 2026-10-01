@@ -204,6 +204,8 @@ export const api = {
   draw: (payload: {
     region: { adcode: string; name: string };
     scope?: DrawScope;
+    /** 限定省份（如 330000）：全国化后"全省随机/随机城市"都按它限定范围 */
+    provinceAdcode?: string;
     categoryIds: string[];
     randomize?: boolean;
     randomCount?: number;

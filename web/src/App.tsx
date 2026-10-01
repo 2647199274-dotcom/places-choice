@@ -48,6 +48,7 @@ export default function App() {
   const [stock, setStock] = useState(0);
 
   const [city, setCity] = useState<ApiCity | null>(null);
+  const [activeProvince, setActiveProvince] = useState('');
   const [scope, setScope] = useState<DrawScope>('city');
   const [areas, setAreas] = useState<AreaSelection[]>([]);
   const [areaData, setAreaData] = useState<Record<string, ApiArea[]>>({});
@@ -146,6 +147,15 @@ export default function App() {
   }, [city?.adcode, scope, mode, randomCount, maxCost, minRating, excludeVisited, areas, [...selected].sort().join(',')]);
 
   const requiredIds = useMemo(() => categories.filter((c) => c.required).map((c) => c.id), [categories]);
+
+  /** 当前省份（默认取数据最多的省，通常就是用户所在区域） */
+  const currentProvince = activeProvince || provinces[0]?.adcode || '';
+  const visibleCities = useMemo(
+    () => (currentProvince
+      ? cities.filter((c) => c.adcode.startsWith(currentProvince.slice(0, 2)))
+      : cities),
+    [cities, currentProvince],
+  );
   const grouped = useMemo(() => {
     const g = new Map<string, ApiCategory[]>();
     for (const c of categories) {
@@ -204,15 +214,16 @@ export default function App() {
     setRevealed(false);
 
     const filters = { excludeVisited, maxCost: maxCost || undefined, minRating: minRating || undefined };
+    const prov = provinces.find((p) => p.adcode === currentProvince) ?? provinces[0];
     const region = scope === 'province'
-      ? { adcode: provinces[0]?.adcode ?? '330000', name: provinces[0]?.name ?? '全省' }
-      : { adcode: city?.adcode ?? '330100', name: city?.name ?? '杭州市' };
+      ? { adcode: prov?.adcode ?? '330000', name: prov?.name ?? '全省' }
+      : { adcode: city?.adcode ?? prov?.adcode ?? '330100', name: city?.name ?? '杭州市' };
     const areaPayload = areas.map((a) => ({ dimension: a.dimension, key: a.key }));
     const catIds = mode === 'manual' ? [...selected] : [];
 
     try {
       const res: ApiDrawResult = await api.draw({
-        region, scope, categoryIds: catIds,
+        region, scope, provinceAdcode: prov?.adcode, categoryIds: catIds,
         randomize: mode === 'random' || scope !== 'city',
         randomCount, filters, segmentCount: 10, areas: areaPayload,
       });
@@ -276,7 +287,7 @@ export default function App() {
   const scopeLabel =
     scope === 'city' ? city?.name ?? '—'
       : scope === 'randomCity' ? '随机城市 🎲'
-        : `${provinces[0]?.name ?? '全省'}全省随机 🎲`;
+        : `${provinces.find((p) => p.adcode === currentProvince)?.name ?? '全省'}全省随机 🎲`;
 
   const withCatLabel = (p: ApiPlace): ApiPlace => {
     if (p.categoryLabel && p.categoryIcon) return p;
@@ -328,8 +339,27 @@ export default function App() {
 
             {scope === 'city' ? (
               <>
+                {/* 有多个省时先选省，再选市（全国数据不能只列城市） */}
+                {provinces.length > 1 && (
+                  <div className="chips province-row">
+                    {provinces.map((p) => (
+                      <button
+                        key={p.adcode}
+                        className={`chip small ${activeProvince === p.adcode ? 'on' : ''}`}
+                        onClick={() => {
+                          setActiveProvince(p.adcode);
+                          const first = cities.find((c) => c.adcode.startsWith(p.adcode.slice(0, 2)));
+                          if (first) { setCity(first); setAreas([]); }
+                        }}
+                      >
+                        {p.name}
+                        <em className="chip-count">{p.total}</em>
+                      </button>
+                    ))}
+                  </div>
+                )}
                 <div className="chips">
-                  {cities.map((c) => (
+                  {visibleCities.map((c) => (
                     <button
                       key={c.adcode}
                       className={`chip ${city?.adcode === c.adcode ? 'on' : ''}`}
@@ -395,7 +425,7 @@ export default function App() {
               <p className="hint">
                 {scope === 'randomCity'
                   ? `从 ${cities.length} 个城市里随机抽一个再转`
-                  : `在 ${provinces[0]?.name ?? '全省'} ${cities.length} 个城市里混抽`}
+                  : `在 ${provinces.find((p) => p.adcode === currentProvince)?.name ?? '全省'} ${visibleCities.length} 个城市里混抽`}
               </p>
             )}
           </div>

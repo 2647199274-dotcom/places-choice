@@ -40,7 +40,7 @@ app.get('/api/regions', async () => {
   const regions = await getRegions();
   const cities = await getCitySummaries();
   const districts = regions.filter((r) => r.level === 3);
-  // 省份聚合（前端"随机省份/全省随机"用）
+  // 省份聚合：按"库里真的有数据的城市"聚合（全国化后不能再写死浙江）
   const provinceMap = new Map<string, { adcode: string; name: string; cities: number; total: number }>();
   for (const c of cities) {
     const key = c.province || '其他';
@@ -50,7 +50,9 @@ app.get('/api/regions', async () => {
     p.cities += 1;
     p.total += c.total;
   }
-  return { cities, provinces: [...provinceMap.values()], districts };
+  // 有数据的省排在前面，便于前端默认选择
+  const provinces = [...provinceMap.values()].sort((a, b) => b.total - a.total);
+  return { cities, provinces, districts };
 });
 
 app.get('/api/cities', async () => ({ cities: await getCitySummaries() }));
@@ -83,6 +85,7 @@ app.post('/api/areas/rebuild-metro', async (req) => {
 app.get('/api/dataset', async () => {
   const [cities, regions] = await Promise.all([getCitySummaries(), getRegions()]);
   const allPlaces = await getPlacesMulti(cities.map((c) => c.adcode), categories.map((c) => c.id));
+  // 省份聚合：按库里城市实际所属省份聚合（全国化后必须如此，不能写死浙江）
   const provinceMap = new Map<string, { adcode: string; name: string; cities: number; total: number }>();
   for (const c of cities) {
     const key = c.province || '其他';
@@ -91,6 +94,7 @@ app.get('/api/dataset', async () => {
     p.cities += 1;
     p.total += c.total;
   }
+  const provinces = [...provinceMap.values()].sort((a, b) => b.total - a.total);
   // 区域维度（地铁/地区/商场/商圈）也一并导出，离线时同样能按区域筛
   const areaDims: AreaDimension[] = ['district', 'businessArea', 'mall', 'metro'];
   const areas: Record<string, Record<string, unknown>> = {};
@@ -107,7 +111,7 @@ app.get('/api/dataset', async () => {
     categories,
     requiredIds: categories.filter((c) => c.required).map((c) => c.id),
     cities,
-    provinces: [...provinceMap.values()],
+    provinces,
     districts: regions.filter((r) => r.level === 3),
     areas,
     places: allPlaces,
@@ -144,6 +148,8 @@ app.post('/api/draw', async (req, reply) => {
     region?: { adcode: string; name: string };
     /** scope: city=指定城市（默认）；randomCity=全省/全国随机一个城市；province=全省混抽 */
     scope?: 'city' | 'randomCity' | 'province';
+    /** 限定省份（adcode 前两位，如 330000）；全国化后必须能指定，不能写死浙江 */
+    provinceAdcode?: string;
     categoryIds?: string[];
     randomize?: boolean;
     randomCount?: number;
@@ -162,15 +168,23 @@ app.post('/api/draw', async (req, reply) => {
 
   if (scope === 'randomCity' || scope === 'province') {
     // 只在"有数据的城市"里选，避免抽到空城
-    const candidates = body.region?.adcode && scope === 'province'
-      ? summaries.filter((c) => c.adcode.startsWith(body.region!.adcode.slice(0, 2)))
+    // provinceAdcode：省份范围（全省随机/限定省份随机城市）；缺省时按传入城市所属省份推断
+    const wantedProvince = body.provinceAdcode
+      ?? (body.region?.adcode ? `${body.region.adcode.slice(0, 2)}0000` : undefined);
+    const candidates = wantedProvince
+      ? summaries.filter((c) => c.adcode.startsWith(wantedProvince.slice(0, 2)))
       : summaries;
     if (candidates.length === 0) {
       return reply.code(404).send({ error: 'NO_CITY', message: '所选范围内暂无任何城市数据' });
     }
     if (scope === 'province') {
       cityPool = candidates.map((c) => c.adcode);
-      region = { adcode: candidates[0].adcode.slice(0, 2) + '0000', name: '浙江省（全省随机）' };
+      // 省份名不能写死：现在库里是全国数据，要用所选城市实际所属的省/自治区名
+      const provinceName =
+        candidates[0].province ||
+        summaries.find((c) => c.adcode === (body.region?.adcode ?? ''))?.province ||
+        '全省';
+      region = { adcode: candidates[0].adcode.slice(0, 2) + '0000', name: `${provinceName}（全省随机）` };
     } else {
       const picked = candidates[randomInt(candidates.length)];
       region = { adcode: picked.adcode, name: picked.name };

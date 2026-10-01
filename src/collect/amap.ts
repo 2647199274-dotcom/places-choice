@@ -74,6 +74,13 @@ export interface SearchOptions {
   adcodeFilter?: string[];
   /** 只保留商圈名匹配的 POI（按商圈细分采集时用） */
   businessAreaFilter?: string[];
+  /**
+   * 城市码前缀过滤：只保留 adcode 以该前缀开头的 POI。
+   * 实测坑：高德在 citylimit=true 时**仍会漏出邻近城市**的 POI —— 采「广州」会带出深圳的店，
+   * 采「杭州」会带出三亚/万宁的店（表现为一堆"只有 1 条"的城市混进库里）。
+   * 这里按 adcode 前缀硬过滤，保证"哪个城市的数据就是哪个城市的"。
+   */
+  cityPrefix?: string;
   cityLimit?: boolean;
   throttleMs?: number;
   retries?: number;
@@ -82,10 +89,31 @@ export interface SearchOptions {
   skipRaw?: boolean;
 }
 
-/** 调用高德 v3/place/text（关键字搜索，extensions=all 才有 biz_ext 评分/人均） */
-export async function searchPlaces(opts: SearchOptions): Promise<{ pois: AmapPoiV3[]; count: number; raw: unknown }> {
+/** 调用高德 v3/place/text（关键字搜索，extensions=all 才有 biz_ext 评分/人均）
+ *
+ *  【实测坑】region 参数不能用直辖市的 adcode：
+ *    region=310100（上海）/ 500100（重庆）/ 120100（天津）会**返回北京的数据**，
+ *    只有 region=110100（北京）碰巧正确。必须传城市名（"上海市"/"上海"）。
+ *    这里做了保险：先用传进来的 region，若首批结果不属于预期省份，自动改用 cityName 重试。
+ */
+export async function searchPlaces(opts: SearchOptions & { fallbackRegion?: string }): Promise<{ pois: AmapPoiV3[]; count: number; raw: unknown }> {
+  const first = await searchPlacesOnce(opts);
+  const prefix = opts.cityPrefix;
+  if (!prefix || first.pois.length === 0) return first;
+
+  // 结果里连一条都不属于目标城市前缀 → 说明 region 没被识别，换城市名重试
+  const belongs = first.pois.filter((p) => (p.adcode ?? '').startsWith(prefix));
+  if (belongs.length > 0 || !opts.fallbackRegion || opts.fallbackRegion === opts.region) return first;
+
+  const retry = await searchPlacesOnce({ ...opts, region: opts.fallbackRegion });
+  const retryBelongs = retry.pois.filter((p) => (p.adcode ?? '').startsWith(prefix));
+  if (retryBelongs.length > 0) return retry;
+  return first;
+}
+
+async function searchPlacesOnce(opts: SearchOptions): Promise<{ pois: AmapPoiV3[]; count: number; raw: unknown }> {
   const {
-    key, keywords, region, types, pageNum = 1, adcodeFilter, businessAreaFilter,
+    key, keywords, region, types, pageNum = 1, adcodeFilter, businessAreaFilter, cityPrefix,
     cityLimit = true, throttleMs = 350, retries = 2, base = AMAP_BASE, skipRaw = false,
   } = opts;
 
@@ -99,6 +127,7 @@ export async function searchPlaces(opts: SearchOptions): Promise<{ pois: AmapPoi
   const url = `${base}/v3/place/text?${params.toString()}`;
 
   let lastErr: Error | null = null;
+  let dropNote = '';
   for (let attempt = 0; attempt <= retries; attempt++) {
     await throttle(throttleMs);
     try {
@@ -107,6 +136,11 @@ export async function searchPlaces(opts: SearchOptions): Promise<{ pois: AmapPoi
       if (json.status !== '1') throw new Error(`高德返回错误: ${json.info} (infocode=${json.infocode})`);
 
       let pois = json.pois ?? [];
+      if (cityPrefix) {
+        const before = pois.length;
+        pois = pois.filter((p) => (p.adcode ?? '').startsWith(cityPrefix));
+        if (before !== pois.length) dropNote = `${before - pois.length} 条属于邻近城市，已剔除`;
+      }
       if (adcodeFilter?.length) pois = pois.filter((p) => adcodeFilter.includes(p.adcode ?? ''));
       if (businessAreaFilter?.length) {
         const set = new Set(businessAreaFilter);
@@ -217,6 +251,19 @@ export interface CollectTask {
   cityAdcode: string;
 }
 
+/** 从市级 adcode 取"城市前缀"，用于剔除高德漏出的邻近城市 POI（330100 → 3301） */
+export function cityPrefixOf(cityAdcode: string): string {
+  const digits = String(cityAdcode ?? '').replace(/\D/g, '');
+  if (digits.length < 4) return '';
+  return digits.slice(0, 4);
+}
+
+/** 直辖市（含港澳）：高德不认它们的市级 adcode，必须用城市名查询 */
+export function isMunicipality(cityAdcode: string): boolean {
+  const code = String(cityAdcode ?? '').slice(0, 4);
+  return ['1101', '1201', '3101', '5001', '8101', '8201'].includes(code);
+}
+
 /** 伪分类：地铁站 / 商场 —— 它们不是"转盘项目"，而是"选区域"的维度，单独采集 */
 export const AREA_CATEGORIES: Record<'metro' | 'mall', Category> = {
   metro: {
@@ -246,8 +293,12 @@ export async function collectAreaDimension(
     let pois: AmapPoiV3[] = [];
     try {
       const r = await searchPlaces({
-        key: opts.key, keywords: '', region: city.cityAdcode, types: category.amapTypes,
-        pageNum: page, base: opts.base, throttleMs: opts.throttleMs, skipRaw: true,
+        key: opts.key, keywords: '',
+        region: isMunicipality(city.cityAdcode) ? city.cityName : city.cityAdcode,
+        fallbackRegion: city.cityName,
+        types: category.amapTypes,
+        pageNum: page, cityPrefix: cityPrefixOf(city.cityAdcode),
+        base: opts.base, throttleMs: opts.throttleMs, skipRaw: true,
       });
       pois = r.pois;
     } catch {
@@ -305,8 +356,12 @@ export async function collectCategory(
       let r: CollectResult;
       try {
         const { pois, count } = await searchPlaces({
-          key: opts.key, keywords: keyword, region: task.cityAdcode || task.cityName,
+          key: opts.key, keywords: keyword,
+          // 直辖市 adcode 不被高德识别（会返回北京数据），所以优先用城市名，adcode 作为备用
+          region: isMunicipality(task.cityAdcode) ? task.cityName : (task.cityAdcode || task.cityName),
+          fallbackRegion: task.cityName,
           types: task.category.amapTypes, pageNum: page,
+          cityPrefix: cityPrefixOf(task.cityAdcode),
           base: opts.base, throttleMs: opts.throttleMs, skipRaw: page > 1,
         });
         // v3 在无更多结果时会重复返回同一页，检测到就停

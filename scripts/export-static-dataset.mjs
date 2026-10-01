@@ -62,7 +62,7 @@ async function fromDatabase() {
     categories,
     requiredIds: categories.filter((c) => c.required).map((c) => c.id),
     cities,
-    provinces: [...provinceMap.values()],
+    provinces: [...provinceMap.values()].sort((a, b) => b.total - a.total),
     districts: regions.filter((r) => r.level === 3),
     areas,
     places,

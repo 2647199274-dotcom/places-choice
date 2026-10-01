@@ -75,6 +75,10 @@ h2 { margin: 0; font-size: 14px; color: #d8deff; letter-spacing: 0.5px; }
 
 /* ---------- chips ---------- */
 .chips { display: flex; flex-wrap: wrap; gap: 7px; }
+.province-row {
+  padding-bottom: 8px; margin-bottom: 8px;
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.1);
+}
 .chip {
   padding: 7px 12px; border-radius: 999px; cursor: pointer; font-size: 13px;
   background: rgba(255, 255, 255, 0.05); color: #d5daf5;

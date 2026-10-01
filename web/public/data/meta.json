@@ -1,13 +1,82 @@
 {
-  "generatedAt": "2026-10-01T10:55:32.111Z",
+  "generatedAt": "2026-10-01T12:04:14.346Z",
   "source": "sqlite",
   "compact": true,
-  "placeCount": 11814,
-  "cityCount": 11,
+  "placeCount": 25820,
+  "cityCount": 53,
   "categoryCount": 27,
-  "exactCoordCount": 11164,
-  "withPoiIdCount": 11167,
+  "exactCoordCount": 25170,
+  "withPoiIdCount": 25173,
   "areaDims": {
+    "110100": [
+      "district",
+      "businessArea",
+      "mall"
+    ],
+    "120100": [
+      "district",
+      "businessArea",
+      "mall"
+    ],
+    "130100": [
+      "district",
+      "businessArea"
+    ],
+    "131000": [
+      "district",
+      "businessArea"
+    ],
+    "140100": [
+      "district",
+      "businessArea",
+      "mall"
+    ],
+    "140200": [
+      "district",
+      "businessArea"
+    ],
+    "210100": [
+      "district",
+      "businessArea",
+      "mall"
+    ],
+    "210200": [
+      "district",
+      "businessArea"
+    ],
+    "220100": [
+      "district",
+      "businessArea",
+      "mall"
+    ],
+    "230100": [
+      "district",
+      "businessArea",
+      "mall"
+    ],
+    "310100": [
+      "district",
+      "businessArea",
+      "mall"
+    ],
+    "320100": [
+      "district",
+      "businessArea",
+      "mall"
+    ],
+    "320200": [
+      "district",
+      "businessArea"
+    ],
+    "320500": [
+      "district",
+      "businessArea",
+      "mall"
+    ],
+    "321000": [
+      "district",
+      "businessArea"
+    ],
     "330100": [
       "district",
       "businessArea",
@@ -63,6 +132,126 @@
       "district",
       "businessArea",
       "mall"
+    ],
+    "340100": [
+      "district",
+      "businessArea",
+      "mall"
+    ],
+    "350100": [
+      "district",
+      "businessArea"
+    ],
+    "350500": [
+      "district",
+      "businessArea"
+    ],
+    "360100": [
+      "district",
+      "businessArea"
+    ],
+    "370100": [
+      "district",
+      "businessArea"
+    ],
+    "370200": [
+      "district",
+      "businessArea",
+      "mall"
+    ],
+    "370700": [
+      "district",
+      "businessArea"
+    ],
+    "371000": [
+      "district",
+      "businessArea",
+      "mall"
+    ],
+    "410100": [
+      "district",
+      "businessArea",
+      "mall"
+    ],
+    "420100": [
+      "district",
+      "businessArea",
+      "mall"
+    ],
+    "430100": [
+      "district",
+      "businessArea",
+      "mall"
+    ],
+    "440100": [
+      "district",
+      "businessArea",
+      "mall"
+    ],
+    "440300": [
+      "district",
+      "businessArea",
+      "mall"
+    ],
+    "440400": [
+      "district",
+      "businessArea"
+    ],
+    "440500": [
+      "district",
+      "businessArea"
+    ],
+    "440600": [
+      "district",
+      "businessArea"
+    ],
+    "441300": [
+      "district",
+      "businessArea",
+      "mall"
+    ],
+    "441900": [
+      "district",
+      "businessArea"
+    ],
+    "450200": [
+      "district",
+      "businessArea"
+    ],
+    "500100": [
+      "district",
+      "businessArea",
+      "mall"
+    ],
+    "510100": [
+      "district",
+      "businessArea",
+      "mall"
+    ],
+    "520100": [
+      "district",
+      "businessArea",
+      "mall"
+    ],
+    "530700": [
+      "district",
+      "businessArea"
+    ],
+    "532900": [
+      "district",
+      "businessArea"
+    ],
+    "540100": [
+      "district",
+      "businessArea"
+    ],
+    "610100": [
+      "district",
+      "businessArea",
+      "mall"
+    ],
+    "710500": [
+      "district"
     ]
   }
 }
