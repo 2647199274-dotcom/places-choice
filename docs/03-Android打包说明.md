@@ -82,7 +82,7 @@ server: { url: 'http://192.168.1.20:5178', cleartext: true }
 
 即便 `VITE_API_BASE` 没连上（电脑不在、手机没连 Wi-Fi），App 也不会白屏：
 
-1. 首次联网打开时会把全量数据集存进 `localStorage`
+1. 首次联网打开时会把全量数据集存进 **IndexedDB**（不是 localStorage：数据集约 2.8MB，localStorage 上限约 5MB 且按 UTF-16 计更吃紧；足迹/历史这类小数据仍走 localStorage）
 2. 之后网络不可达 → 自动进入**离线模式**（顶部徽标提示），用内置的本地抽签引擎转盘
 3. 结果卡、高德链接、「就去这家」的足迹记录在离线状态下同样可用
 4. 本地引擎与后端引擎的规则一致性由 `npm run test:local` 校验（逐字段一致）
