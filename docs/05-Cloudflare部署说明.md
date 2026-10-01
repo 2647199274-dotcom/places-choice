@@ -117,6 +117,40 @@ curl.exe -s -o NUL -w "%{http_code}`n" https://places-choice.pages.dev/api/datas
 用**移动流量**（不挂梯子）打开那个 `*.pages.dev` 链接 → 能开就说明国内直连 OK → 浏览器菜单里选
 **"添加到主屏幕"** → 之后全屏、离线都能用。
 
+### 控制台里的两个命令字段（**最容易踩的坑**）
+
+Worker 项目的构建分三步，注意**第二步不是自动的**：
+
+| 步骤 | 谁执行 | 日志里的样子 |
+|---|---|---|
+| 1. 装依赖 | CF 自动（检测到 `package-lock.json` 就跑 `npm ci`） | `Installing project dependencies: npm clean-install` |
+| 2. **跑构建** | **`Build command` 字段 —— 新建项目时默认是空的！** | `Executing user build command: ...` |
+| 3. 部署 | `Deploy command` 字段（默认 `npx wrangler deploy`） | `Executing user deploy command: npx wrangler deploy` |
+
+**如果第 2 步没跑，`web/dist` 就不存在，wrangler 会报：**
+
+```
+✘ [ERROR] The directory specified by the "assets.directory" field in your configuration file does not exist:
+  /opt/buildhome/repo/web/dist
+```
+
+（曾实际发生过：日志里 `clean-install` 之后直接跳到 `deploy command`，中间没有构建。）
+
+**修法（推荐，只改一个字段）**：项目 → `Settings` → `Build` → 把 **`Deploy command`** 改成
+
+```
+npm run deploy:cf
+```
+
+这个脚本在 `package.json` 里，内容是
+`verify-static-dataset.mjs && npm run build:web && npx --yes wrangler deploy` ——
+**校验快照 → 构建 → 部署**一条龙，不依赖 Build command 字段是否被填。
+（`Build command` 留空即可；若它非空会多构建一次，无害但慢。）
+
+**修法 B（标准两段式）**：`Build command` 填
+`node scripts/verify-static-dataset.mjs && npm run build:web`，
+`Deploy command` 保持默认 `npx wrangler deploy`。
+
 ---
 
 ## 三之二、如果你建成了 **Worker**（Workers + Static Assets）
@@ -209,6 +243,8 @@ npx wrangler@latest pages deploy web/dist --project-name places-choice
 
 | 现象 | 原因 | 处理 |
 |---|---|---|
+| `✘ assets.directory ... does not exist: /opt/buildhome/repo/web/dist` | **构建没跑**（`Build command` 是空的，`web/dist` 没生成）→ 日志里 `clean-install` 后直接是 `deploy command` | 把 `Deploy command` 改成 `npm run deploy:cf`，见第三之二节 |
+| 部署成功但访问的是别的 Worker / 报名字不匹配 | `wrangler.jsonc` 的 `name` 与控制台项目名不一致 | 把项目名改成 `places-choice`（与配置一致），或改配置里的 `name` |
 | 页面白屏、控制台报 `/assets/...` 404 | 设了 `VITE_BASE=/places-choice/` | 删掉该环境变量，重新部署 |
 | 构建报 `vite: command not found` / Node 版本错 | Node 版本过低 | 确认 `.nvmrc` = 22 且环境变量 `NODE_VERSION=22` |
 | 构建卡在 `better-sqlite3` 报错 | CF 环境编译原生模块失败 | 改用第五节的命令行直传 |
