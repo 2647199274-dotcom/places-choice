@@ -9,6 +9,7 @@
     "draw": "node src/cli/draw.ts",
     "categories": "node src/cli/draw.ts --list-categories",
     "collect": "node src/cli/collect.ts",
+    "collect:areas": "node src/cli/collect-areas.ts",
     "api": "node src/server/index.ts",
     "web": "vite --config web/vite.config.ts",
     "build:web": "vite build --config web/vite.config.ts",
@@ -20,9 +21,10 @@
     "test:draw": "node tests/verify-draw.mjs",
     "test:region": "node tests/verify-region.mjs",
     "test:china": "node tests/verify-china.mjs",
+    "test:areas": "node tests/verify-areas.mjs",
     "test:web": "node tests/verify-web.mjs",
     "test:local": "node tests/verify-local.mjs",
-    "test": "npm run typecheck && npm run test:draw && npm run test:region && npm run test:china && npm run test:collector",
+    "test": "npm run typecheck && npm run test:draw && npm run test:region && npm run test:china && npm run test:areas && npm run test:collector",
     "test:probe": "node tests/probe-apis.mjs && node tests/probe-round2.mjs && node tests/probe-round3.mjs"
   },
   "dependencies": {

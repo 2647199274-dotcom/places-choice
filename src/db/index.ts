@@ -30,10 +30,12 @@ export function loadSeed(): SeedFile {
 }
 
 let _db: any = null;
+let _dbInitError: Error | null = null;
 
 /** 惰性打开 SQLite；不可用时返回 null，调用方回退到 JSON 数据源 */
 export async function openDb(): Promise<any | null> {
   if (_db) return _db;
+  if (_dbInitError) return null;
   try {
     const mod: any = await import('better-sqlite3');
     const Database = mod.default ?? mod;
@@ -44,9 +46,23 @@ export async function openDb(): Promise<any | null> {
     _db = db;
     return db;
   } catch (e) {
-    console.warn(`[db] SQLite 不可用（${(e as Error).message.slice(0, 80)}…），改用 JSON 数据源`);
+    _dbInitError = e as Error;
+    console.warn(`[db] SQLite 不可用（${(e as Error).message.slice(0, 120)}…），改用 JSON 数据源`);
     return null;
   }
+}
+
+/** 数据库是否真的可用 —— 采集/写入前必须检查，避免"静默降级成 JSON 导致数据丢失" */
+export async function requireDb(): Promise<any> {
+  const db = await openDb();
+  if (!db) {
+    const why = _dbInitError ? `（原因：${_dbInitError.message.split('\n')[0]}）` : '';
+    throw new Error(
+      `数据库不可用，拒绝在降级模式下写入，以免采集数据被丢弃${why}。\n` +
+        '  处理：删掉 data/trip.db 后重跑（会自动重建），或检查 data/ 目录权限。',
+    );
+  }
+  return db;
 }
 
 function migrate(db: any) {
@@ -59,7 +75,8 @@ function migrate(db: any) {
       city_adcode TEXT, region_adcode TEXT, city TEXT, district TEXT, district_adcode TEXT, address TEXT,
       lng REAL, lat REAL, rating REAL, cost REAL, why TEXT,
       amap_poi_id TEXT, amap_url TEXT, uri_search_url TEXT, marker_url TEXT, navi_url TEXT,
-      coord_precision TEXT, fetched_at TEXT
+      coord_precision TEXT, fetched_at TEXT,
+      business_area TEXT, typecode TEXT, tel TEXT, opentime TEXT, photo TEXT
     );
     CREATE INDEX IF NOT EXISTS idx_place_city_cat ON place(city_adcode, category_id);
     CREATE TABLE IF NOT EXISTS visited (
@@ -72,6 +89,11 @@ function migrate(db: any) {
       id INTEGER PRIMARY KEY AUTOINCREMENT, source TEXT, city TEXT, category_id TEXT,
       keyword TEXT, page INTEGER, got INTEGER, ran_at TEXT, ok INTEGER, msg TEXT
     );
+    -- 地点 ↔ 地铁站（按距离算出来的归属关系，算一次复用）
+    CREATE TABLE IF NOT EXISTS place_metro (
+      place_id TEXT PRIMARY KEY, station_id TEXT, station_name TEXT, distance_m INTEGER
+    );
+    CREATE INDEX IF NOT EXISTS idx_place_metro_station ON place_metro(station_id);
   `);
 
   // 轻量迁移：老库补列（city_adcode 用于按城市查询；高德返回的是区县级 adcode）
@@ -81,6 +103,13 @@ function migrate(db: any) {
     // 老数据回填：区县 adcode 前 4 位 + '00' 即市级 adcode（如 330102 -> 330100）
     db.exec("UPDATE place SET city_adcode = substr(district_adcode, 1, 4) || '00' WHERE city_adcode IS NULL AND district_adcode IS NOT NULL");
   }
+  // 高德扩展字段（商圈/品类码/电话/营业时间/图片）——支撑"按商圈/商场选区域"
+  for (const [col, ddl] of [
+    ['business_area', 'TEXT'], ['typecode', 'TEXT'], ['tel', 'TEXT'], ['opentime', 'TEXT'], ['photo', 'TEXT'],
+  ] as const) {
+    if (!cols.includes(col)) db.exec(`ALTER TABLE place ADD COLUMN ${col} ${ddl}`);
+  }
+  db.exec('CREATE INDEX IF NOT EXISTS idx_place_area ON place(city_adcode, business_area)');
 }
 
 /**
@@ -130,15 +159,66 @@ export function upsertRegions(regions: Region[]): number {
   return regions.length;
 }
 
+/** 落库前的字段清洗：SQLite 只接受 number/string/bigint/buffer/null，
+ *  采集来的原始数据里可能有 undefined / 对象 / 数组，直接 bind 会抛
+ *  "can only bind numbers, strings, bigints, buffers, and null"。 */
+function sanitizeForDb(p: Place): Record<string, unknown> {
+  const str = (v: unknown): string => {
+    if (v == null) return '';
+    if (typeof v === 'string') return v;
+    if (typeof v === 'number' || typeof v === 'boolean') return String(v);
+    if (Array.isArray(v)) return v.map((x) => (typeof x === 'string' ? x : JSON.stringify(x))).join(' ');
+    if (typeof v === 'object') return JSON.stringify(v);
+    return String(v);
+  };
+  const num = (v: unknown): number => {
+    const n = typeof v === 'number' ? v : Number(v);
+    return Number.isFinite(n) ? n : 0;
+  };
+  const optStr = (v: unknown): string | null => (v == null || v === '' ? null : str(v));
+  return {
+    id: str(p.id),
+    source: str(p.source) || 'unknown',
+    name: str(p.name),
+    categoryId: str(p.categoryId),
+    cityAdcode: str(p.cityAdcode) || (p.districtAdcode ? `${str(p.districtAdcode).slice(0, 4)}00` : ''),
+    regionAdcode: str(p.regionAdcode),
+    city: str(p.city),
+    district: str(p.district),
+    districtAdcode: str(p.districtAdcode),
+    address: str(p.address),
+    lng: num(p.lng),
+    lat: num(p.lat),
+    rating: num(p.rating),
+    cost: num(p.cost),
+    why: str(p.why),
+    amapPoiId: optStr(p.amapPoiId),
+    amapUrl: optStr(p.amapUrl),
+    uriSearchUrl: str(p.uriSearchUrl),
+    markerUrl: optStr(p.markerUrl),
+    naviUrl: optStr(p.naviUrl),
+    coordPrecision: str(p.coordPrecision) || 'approx',
+    fetchedAt: str(p.fetchedAt) || new Date().toISOString(),
+    businessArea: str(p.businessArea),
+    typecode: str(p.typecode),
+    tel: str(p.tel),
+    opentime: str(p.opentime),
+    photo: str(p.photo),
+  };
+}
+
 export function upsertPlaces(places: Place[]): number {
-  if (!_db) return 0;
+  if (!_db) {
+    // 绝不在数据库不可用时假装成功：采集数据会凭空消失
+    throw new Error('数据库未就绪，upsertPlaces 被拒绝（避免静默丢弃采集数据）。请先 await requireDb()');
+  }
   const stmt = _db.prepare(
     `INSERT INTO place (id, source, name, category_id, city_adcode, region_adcode, city, district, district_adcode, address,
                         lng, lat, rating, cost, why, amap_poi_id, amap_url, uri_search_url, marker_url, navi_url,
-                        coord_precision, fetched_at)
+                        coord_precision, fetched_at, business_area, typecode, tel, opentime, photo)
      VALUES (@id, @source, @name, @categoryId, @cityAdcode, @regionAdcode, @city, @district, @districtAdcode, @address,
              @lng, @lat, @rating, @cost, @why, @amapPoiId, @amapUrl, @uriSearchUrl, @markerUrl, @naviUrl,
-             @coordPrecision, @fetchedAt)
+             @coordPrecision, @fetchedAt, @businessArea, @typecode, @tel, @opentime, @photo)
      ON CONFLICT(id) DO UPDATE SET
        source=excluded.source, name=excluded.name, category_id=excluded.category_id,
        city_adcode=excluded.city_adcode, region_adcode=excluded.region_adcode, city=excluded.city,
@@ -148,18 +228,21 @@ export function upsertPlaces(places: Place[]): number {
        amap_poi_id=COALESCE(excluded.amap_poi_id, place.amap_poi_id),
        amap_url=COALESCE(excluded.amap_url, place.amap_url),
        uri_search_url=excluded.uri_search_url, marker_url=excluded.marker_url, navi_url=excluded.navi_url,
-       coord_precision=excluded.coord_precision, fetched_at=excluded.fetched_at`,
+       coord_precision=excluded.coord_precision, fetched_at=excluded.fetched_at,
+       business_area=COALESCE(NULLIF(excluded.business_area, ''), place.business_area),
+       typecode=COALESCE(NULLIF(excluded.typecode, ''), place.typecode),
+       tel=COALESCE(NULLIF(excluded.tel, ''), place.tel),
+       opentime=COALESCE(NULLIF(excluded.opentime, ''), place.opentime),
+       photo=COALESCE(NULLIF(excluded.photo, ''), place.photo)`,
   );
   const tx = _db.transaction((rows: Place[]) => {
-    for (const r of rows) {
-      stmt.run({ ...r, cityAdcode: r.cityAdcode || (r.districtAdcode ? `${r.districtAdcode.slice(0, 4)}00` : '') });
-    }
+    for (const r of rows) stmt.run(sanitizeForDb(r));
   });
   tx(places);
   return places.length;
 }
 
-const ROW_TO_PLACE = (r: any): Place => ({
+export const ROW_TO_PLACE = (r: any): Place => ({
   id: r.id, source: r.source, name: r.name, categoryId: r.category_id,
   cityAdcode: r.city_adcode ?? '', regionAdcode: r.region_adcode, city: r.city,
   district: r.district, districtAdcode: r.district_adcode,
@@ -167,6 +250,8 @@ const ROW_TO_PLACE = (r: any): Place => ({
   amapPoiId: r.amap_poi_id, amapUrl: r.amap_url, uriSearchUrl: r.uri_search_url,
   markerUrl: r.marker_url, naviUrl: r.navi_url,
   coordPrecision: r.coord_precision, fetchedAt: r.fetched_at,
+  businessArea: r.business_area ?? '', typecode: r.typecode ?? '', tel: r.tel ?? '',
+  opentime: r.opentime ?? '', photo: r.photo ?? '',
 });
 
 /** 按城市取候选：city_adcode 优先，兼容 region_adcode（老数据/种子数据） */

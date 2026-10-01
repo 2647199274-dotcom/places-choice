@@ -1,15 +1,17 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { api, type ApiCategory, type ApiCity, type ApiDrawResult, type ApiPlace, type ApiProvince, type DrawScope } from './api.ts';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  api, type ApiArea, type ApiCategory, type ApiCity, type ApiDrawResult, type ApiPlace, type ApiProvince,
+  type AreaDimension, type AreaSelection, type DrawScope,
+} from './api.ts';
 import {
   addLocalRecent, addLocalVisited, datasetAgeLabel, loadDataset, localRecentIds, localVisitedIds, saveDataset,
   type CachedDataset,
 } from './store.ts';
-import { amapLinks, localDraw } from './localDraw.ts';
+import { amapLinks, localDraw, randomCategoryIds } from './localDraw.ts';
 import { Wheel } from './Wheel.tsx';
 
 type Mode = 'manual' | 'random';
 
-/** 结果卡统一结构：后端抽签与本地抽签都能填满 */
 interface AppResult {
   segments: { placeId: string; name: string; share: number }[];
   winnerIndex: number;
@@ -21,18 +23,29 @@ interface AppResult {
   fromLocal: boolean;
 }
 
+const DIMENSIONS: { id: AreaDimension; label: string; icon: string }[] = [
+  { id: 'metro', label: '地铁', icon: '🚇' },
+  { id: 'district', label: '地区', icon: '🗺️' },
+  { id: 'businessArea', label: '商圈', icon: '🏙️' },
+  { id: 'mall', label: '商场', icon: '🛍️' },
+];
+
 export default function App() {
   const [categories, setCategories] = useState<ApiCategory[]>([]);
   const [cities, setCities] = useState<ApiCity[]>([]);
   const [provinces, setProvinces] = useState<ApiProvince[]>([]);
-  const [districts, setDistricts] = useState<{ adcode: string; name: string; parent: string }[]>([]);
-  const [stock, setStock] = useState(0);
+
   const [offline, setOffline] = useState(false);
   const [cacheLabel, setCacheLabel] = useState('');
-  const cachedRef = useRef<CachedDataset | null>(null);
+  const [cachedAreas, setCachedAreas] = useState<Record<string, Record<string, ApiArea[]>>>({});
+  const [stock, setStock] = useState(0);
 
   const [city, setCity] = useState<ApiCity | null>(null);
   const [scope, setScope] = useState<DrawScope>('city');
+  const [areas, setAreas] = useState<AreaSelection[]>([]);
+  const [areaData, setAreaData] = useState<Record<string, ApiArea[]>>({});
+  const [areaLoading, setAreaLoading] = useState(false);
+
   const [mode, setMode] = useState<Mode>('manual');
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [randomCount, setRandomCount] = useState(3);
@@ -47,48 +60,67 @@ export default function App() {
   const [error, setError] = useState('');
   const [visitedMsg, setVisitedMsg] = useState('');
 
-  // 初始化：优先后端；失败则回退本地缓存（离线/APK 场景）
+  // 初始化：优先后端；失败则用本地缓存（离线/APK）
   useEffect(() => {
     (async () => {
-      const applyData = (d: CachedDataset, fromCache: boolean) => {
+      const apply = (d: CachedDataset, fromCache: boolean) => {
         setCategories(d.categories);
         setCities(d.cities);
         setProvinces(d.provinces);
-        setDistricts(d.districts);
         setStock(d.places.length);
-        setSelected((prev) => (prev.size ? prev : new Set(d.requiredIds)));
-        setCity((prev) => prev ?? [...d.cities].sort((a, b) => b.total - a.total)[0] ?? null);
+        // 项目默认全选
+        setSelected(new Set(d.categories.map((c) => c.id)));
+        setCity([...d.cities].sort((a, b) => b.total - a.total)[0] ?? null);
         setOffline(fromCache);
         setCacheLabel(datasetAgeLabel(d));
+        if (d.areas) setCachedAreas(d.areas as Record<string, Record<string, ApiArea[]>>);
       };
-
       try {
-        // 一次请求拿全量数据集（顺手写缓存，供离线用）
         const d = await api.dataset();
         const cached: CachedDataset = {
           generatedAt: d.generatedAt, categories: d.categories, requiredIds: d.requiredIds,
-          cities: d.cities, provinces: d.provinces, districts: d.districts, places: d.places,
+          cities: d.cities, provinces: d.provinces, districts: d.districts,
+          areas: d.areas as CachedDataset['areas'], places: d.places,
         };
         saveDataset(cached);
-        cachedRef.current = cached;
-        applyData(cached, false);
+        apply(cached, false);
       } catch {
         const local = loadDataset();
-        if (local) {
-          cachedRef.current = local;
-          applyData(local, true);
-        } else {
-          setError('无法连接后端，且本地没有缓存数据。请先运行 npm run api，或联网打开一次以生成本地缓存。');
-        }
+        if (local) apply(local, true);
+        else setError('连不上后端，且本地没有缓存数据。请先运行 npm run api，或联网打开一次以生成本地缓存。');
       } finally {
         setLoading(false);
       }
     })();
   }, []);
 
-  const requiredIds = useMemo(() => categories.filter((c) => c.required).map((c) => c.id), [categories]);
+  // 拉取该城市的区域维度（按当前选中项目统计数量）
+  useEffect(() => {
+    if (!city) return;
+    const catIds = [...selected];
+    let cancelled = false;
+    setAreaLoading(true);
+    (async () => {
+      try {
+        const r = await api.areas(city.adcode, catIds);
+        if (cancelled) return;
+        setAreaData({
+          district: r.district ?? [], businessArea: r.businessArea ?? [], mall: r.mall ?? [], metro: r.metro ?? [],
+        });
+      } catch {
+        if (cancelled) return;
+        const cached = cachedAreas[city.adcode];
+        setAreaData(cached ? (cached as Record<string, ApiArea[]>) : {});
+      } finally {
+        if (!cancelled) setAreaLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+    // 项目变化会影响每个区域的候选数量，所以跟着刷新
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [city?.adcode, [...selected].sort().join(','), cachedAreas]);
 
-  // 换了地区/项目/过滤条件后，上一盘的转盘和结果就作废
+  // 地区/区域/项目/过滤变化后作废上一盘
   useEffect(() => {
     if (!spinning) {
       setResult(null);
@@ -96,13 +128,9 @@ export default function App() {
       setVisitedMsg('');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [city?.adcode, scope, mode, randomCount, maxCost, minRating, excludeVisited, [...selected].sort().join(',')]);
+  }, [city?.adcode, scope, mode, randomCount, maxCost, minRating, excludeVisited, areas, [...selected].sort().join(',')]);
 
-  const visibleDistricts = useMemo(
-    () => (city ? districts.filter((d) => d.parent === city.adcode) : []),
-    [city, districts],
-  );
-
+  const requiredIds = useMemo(() => categories.filter((c) => c.required).map((c) => c.id), [categories]);
   const grouped = useMemo(() => {
     const g = new Map<string, ApiCategory[]>();
     for (const c of categories) {
@@ -112,13 +140,10 @@ export default function App() {
     return [...g.entries()];
   }, [categories]);
 
-  const availableCats = useMemo(() => {
-    if (scope !== 'city' || !city) return null;
-    return new Set(city.categories);
-  }, [scope, city]);
+  const allSelected = categories.length > 0 && categories.every((c) => selected.has(c.id));
+  const toggleAll = () => setSelected(allSelected ? new Set() : new Set(categories.map((c) => c.id)));
 
-  const toggle = (id: string) => {
-    if (requiredIds.includes(id)) return;
+  const toggleCategory = (id: string) => {
     setSelected((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
@@ -127,11 +152,22 @@ export default function App() {
     });
   };
 
+  const toggleArea = (dimension: AreaDimension, key: string, name: string) => {
+    setAreas((prev) => {
+      const hit = prev.find((a) => a.dimension === dimension && a.key === key);
+      if (hit) return prev.filter((a) => !(a.dimension === dimension && a.key === key));
+      return [...prev, { dimension, key, name }];
+    });
+  };
+
+  const currentAreas = (dim: AreaDimension): AreaSelection[] => areas.filter((a) => a.dimension === dim);
+
   const pickRandomCity = () => {
     if (cities.length <= 1) return;
     const others = cities.filter((c) => c.adcode !== city?.adcode);
     setCity(others[Math.floor(Math.random() * others.length)]);
     setScope('city');
+    setAreas([]);
   };
 
   const pickRandomProjects = async () => {
@@ -139,8 +175,6 @@ export default function App() {
       const r = await api.randomProjects(randomCount);
       setSelected(new Set(r.categoryIds));
     } catch {
-      // 离线：用本地规则随机（与后端同一套权重逻辑）
-      const { randomCategoryIds } = await import('./localDraw.ts');
       setSelected(new Set(randomCategoryIds(categories, randomCount)));
     }
     setMode('random');
@@ -158,83 +192,58 @@ export default function App() {
     const region = scope === 'province'
       ? { adcode: provinces[0]?.adcode ?? '330000', name: provinces[0]?.name ?? '全省' }
       : { adcode: city?.adcode ?? '330100', name: city?.name ?? '杭州市' };
+    const areaPayload = areas.map((a) => ({ dimension: a.dimension, key: a.key }));
+    const catIds = mode === 'manual' ? [...selected] : [];
 
-    // 1) 优先后端（共享足迹/冷却历史）
     try {
       const res: ApiDrawResult = await api.draw({
-        region, scope,
-        categoryIds: mode === 'random' ? [] : [...selected],
+        region, scope, categoryIds: catIds,
         randomize: mode === 'random' || scope !== 'city',
-        randomCount,
-        filters,
-        segmentCount: 10,
+        randomCount, filters, segmentCount: 10, areas: areaPayload,
       });
       setResult({
-        segments: res.segments,
-        winnerIndex: res.winnerIndex,
-        candidateCount: res.candidateCount,
-        cityLabel: res.city,
-        place: res.placeDetail,
-        link: res.link,
-        poolCityCount: res.poolCities?.length ?? 1,
-        fromLocal: false,
+        segments: res.segments, winnerIndex: res.winnerIndex, candidateCount: res.candidateCount,
+        cityLabel: res.city, place: res.placeDetail, link: res.link,
+        poolCityCount: res.poolCities?.length ?? 1, fromLocal: false,
       });
       return;
     } catch (e) {
-      // 2) 后端不可用（离线/APK）：用本地缓存数据集 + 同规则本地抽签
-      const cached = cachedRef.current ?? loadDataset();
+      const cached = loadDataset();
       if (!cached) {
         setSpinning(false);
         setError((e as Error).message);
         return;
       }
-      const { randomCategoryIds } = await import('./localDraw.ts');
-      const categoryIds = mode === 'random' || scope !== 'city'
+      // 离线：本地引擎（区域过滤按 商圈/区县 名称匹配，地铁/商场用取交集后的粗略范围）
+      const chosenCat = mode === 'random' || scope !== 'city'
         ? randomCategoryIds(cached.categories, randomCount)
         : [...selected];
-
-      let pool: string[];
-      if (scope === 'city') {
-        pool = [region.adcode];
-      } else if (scope === 'randomCity') {
+      let pool: string[] = scope === 'city' ? [region.adcode] : cached.cities.map((c) => c.adcode);
+      if (scope === 'randomCity') {
         const pick = cached.cities[Math.floor(Math.random() * cached.cities.length)];
         pool = [pick.adcode];
         region.adcode = pick.adcode;
         region.name = pick.name;
-      } else {
-        pool = cached.cities.map((c) => c.adcode);
       }
-
       const local = localDraw({
-        places: cached.places,
-        categories: cached.categories,
-        cityPool: pool,
-        categoryIds,
-        recentPlaceIds: localRecentIds(),
-        visitedPlaceIds: localVisitedIds(),
-        filters,
-        segmentCount: 10,
+        places: cached.places, categories: cached.categories, cityPool: pool, categoryIds: chosenCat,
+        recentPlaceIds: localRecentIds(), visitedPlaceIds: localVisitedIds(), filters, segmentCount: 10,
+        areas: areas.length ? areas : undefined,
       });
       if (!local) {
         setSpinning(false);
-        setError('本地缓存里没有符合条件的候选，请换城市/项目，或联网同步最新数据。');
+        setError('本地缓存里没有符合条件的候选，换城市/项目/区域，或联网同步最新数据。');
         return;
       }
       addLocalRecent(local.place.id);
       setOffline(true);
-      setCacheLabel(datasetAgeLabel(cached));
       setResult({
-        segments: local.segments,
-        winnerIndex: local.winnerIndex,
-        candidateCount: local.candidateCount,
+        segments: local.segments, winnerIndex: local.winnerIndex, candidateCount: local.candidateCount,
         cityLabel: scope === 'province' ? `${region.name}（全省随机）` : local.place.city,
-        place: local.place,
-        link: amapLinks(local.place),
-        poolCityCount: local.poolCities.length,
-        fromLocal: true,
+        place: local.place, link: amapLinks(local.place), poolCityCount: local.poolCities.length, fromLocal: true,
       });
     }
-  }, [city, scope, mode, selected, randomCount, excludeVisited, maxCost, minRating, spinning, provinces]);
+  }, [city, scope, mode, selected, randomCount, excludeVisited, maxCost, minRating, spinning, provinces, areas]);
 
   const onSpinEnd = useCallback(() => {
     setSpinning(false);
@@ -244,33 +253,25 @@ export default function App() {
   const markVisited = async () => {
     if (!result) return;
     addLocalVisited(result.place.id);
-    try {
-      await api.markVisited(result.place.id, '转盘抽中去过');
-    } catch {
-      // 离线也要记上（只存本地）
-    }
-    setVisitedMsg('已标记为去过，下次选「排除已去过」就不会再抽到它 🌱');
+    try { await api.markVisited(result.place.id, '转盘抽中去过'); } catch { /* 离线只存本地 */ }
+    setVisitedMsg('已记入「去过」🌱');
   };
 
   const chosenCats = categories.filter((c) => selected.has(c.id));
-  // 离线时数据集里的地点没有 categoryLabel/Icon（那是后端为单条结果补的），这里本地补齐
+  const scopeLabel =
+    scope === 'city' ? city?.name ?? '—'
+      : scope === 'randomCity' ? '随机城市 🎲'
+        : `${provinces[0]?.name ?? '全省'}全省随机 🎲`;
+
   const withCatLabel = (p: ApiPlace): ApiPlace => {
     if (p.categoryLabel && p.categoryIcon) return p;
     const c = categories.find((x) => x.id === p.categoryId);
     return { ...p, categoryLabel: c?.label ?? p.categoryId, categoryIcon: c?.icon ?? '📍' };
   };
   const shownPlace = result ? withCatLabel(result.place) : null;
-  const scopeLabel =
-    scope === 'city' ? city?.name ?? '—'
-      : scope === 'randomCity' ? '随机城市 🎲'
-        : `${provinces[0]?.name ?? '全省'}全省随机 🎲`;
 
   if (loading) {
-    return (
-      <div className="app">
-        <div className="loading">🎡 正在加载地点数据…</div>
-      </div>
-    );
+    return <div className="app"><div className="loading">🎡 正在加载地点数据…</div></div>;
   }
 
   return (
@@ -281,10 +282,10 @@ export default function App() {
           <div>
             <h1>出去玩 · 地点选择转盘</h1>
             <p className="sub">
-              选地区 + 选项目 → 转一下，落到哪家就去哪家 · 数据源：高德开放平台
+              选地区 + 选项目 → 转一下，落到哪家就去哪家
               <span className="badge">{cities.length} 市 · {stock} 个地点</span>
               <span className={`badge ${offline ? 'warn' : 'ok'}`}>
-                {offline ? `📴 离线模式（本地缓存 · ${cacheLabel}）` : '🌐 已连接后端'}
+                {offline ? `📴 离线（缓存 ${cacheLabel}）` : '🌐 在线'}
               </span>
             </p>
           </div>
@@ -295,13 +296,14 @@ export default function App() {
 
       <main className="layout">
         <section className="panel">
+          {/* ① 地区 */}
           <div className="block">
             <div className="block-head">
-              <h2>① 选地区</h2>
+              <h2>① 地区</h2>
               <div className="seg">
                 <button className={scope === 'city' ? 'on' : ''} onClick={() => setScope('city')}>选城市</button>
-                <button className={scope === 'randomCity' ? 'on' : ''} onClick={() => setScope('randomCity')}>随机城市</button>
-                <button className={scope === 'province' ? 'on' : ''} onClick={() => setScope('province')}>全省随机</button>
+                <button className={scope === 'randomCity' ? 'on' : ''} onClick={() => { setScope('randomCity'); setAreas([]); }}>随机城市</button>
+                <button className={scope === 'province' ? 'on' : ''} onClick={() => { setScope('province'); setAreas([]); }}>全省随机</button>
               </div>
             </div>
 
@@ -312,89 +314,128 @@ export default function App() {
                     <button
                       key={c.adcode}
                       className={`chip ${city?.adcode === c.adcode ? 'on' : ''}`}
-                      onClick={() => setCity(c)}
+                      onClick={() => { setCity(c); setAreas([]); }}
                       data-places={c.total}
                     >
                       {c.name}
                       <em className="chip-count">{c.total}</em>
                     </button>
                   ))}
+                  <button className="chip ghost-chip" onClick={pickRandomCity}>🎲 随机换一个</button>
                 </div>
-                <div className="block-head" style={{ marginTop: 10 }}>
-                  <span className="hint" style={{ margin: 0 }}>
-                    共 {cities.reduce((s, c) => s + c.total, 0)} 个地点
-                    {provinces.length > 1 && <> · 覆盖 {provinces.map((p) => p.name).join('、')}</>}
-                  </span>
-                  <button className="ghost" onClick={pickRandomCity}>🎲 随机换一个</button>
+
+                {/* 美团式区域筛选：地铁 / 地区 / 商圈 / 商场，可折叠 */}
+                <div className="area-dims">
+                  {DIMENSIONS.map((dim) => {
+                    const list = areaData[dim.id] ?? [];
+                    const picked = currentAreas(dim.id);
+                    return (
+                      <details key={dim.id} className="area-dim" open={dim.id === 'metro'}>
+                        <summary>
+                          <span className="area-label">{dim.icon} {dim.label}</span>
+                          <span className="area-state">
+                            {picked.length > 0 ? `已选 ${picked.length}` : '不限'}
+                            {list.length > 0 && <em className="chip-count">{list.length}</em>}
+                          </span>
+                        </summary>
+                        <div className="area-body">
+                          {areaLoading && list.length === 0 && <span className="hint">加载中…</span>}
+                          {!areaLoading && list.length === 0 && <span className="hint">暂无数据</span>}
+                          {list.slice(0, 40).map((a) => {
+                            const on = picked.some((p) => p.key === a.key);
+                            return (
+                              <button
+                                key={`${dim.id}:${a.key}`}
+                                className={`chip small ${on ? 'on' : ''}`}
+                                onClick={() => toggleArea(dim.id, a.key, a.name)}
+                                title={`${a.name}：${a.placeCount} 个候选`}
+                              >
+                                {a.name}
+                                <em className="chip-count">{a.placeCount}</em>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </details>
+                    );
+                  })}
                 </div>
-                {visibleDistricts.length > 0 && (
-                  <p className="hint">覆盖区县：{visibleDistricts.map((d) => d.name).join(' · ')}</p>
+
+                {areas.length > 0 && (
+                  <div className="area-picked">
+                    {areas.map((a) => (
+                      <button key={`${a.dimension}:${a.key}`} className="tag" onClick={() => toggleArea(a.dimension, a.key, a.name)}>
+                        {a.name} ✕
+                      </button>
+                    ))}
+                    <button className="tag clear" onClick={() => setAreas([])}>清空区域</button>
+                  </div>
                 )}
               </>
             ) : (
               <p className="hint">
                 {scope === 'randomCity'
-                  ? `🎲 从 ${cities.length} 个有数据的城市里随机抽一个，再用该城市的数据转盘（不会抽到没数据的城市）`
-                  : `🎲 在 ${provinces[0]?.name ?? '全省'}全部 ${cities.length} 个城市的候选里混抽，抽中哪座城市就去哪`}
+                  ? `从 ${cities.length} 个城市里随机抽一个再转`
+                  : `在 ${provinces[0]?.name ?? '全省'} ${cities.length} 个城市里混抽`}
               </p>
             )}
           </div>
 
+          {/* ② 项目 */}
           <div className="block">
             <div className="block-head">
-              <h2>② 选项目</h2>
+              <h2>② 项目</h2>
               <div className="seg">
                 <button className={mode === 'manual' ? 'on' : ''} onClick={() => setMode('manual')}>人工选</button>
                 <button className={mode === 'random' ? 'on' : ''} onClick={() => setMode('random')}>随机抽</button>
               </div>
             </div>
 
-            {mode === 'random' ? (
+            {mode === 'manual' ? (
+              <>
+                <div className="select-all">
+                  <label className="switch">
+                    <input type="checkbox" checked={allSelected} onChange={toggleAll} />
+                    <span>全选</span>
+                  </label>
+                  <span className="count">已选 {chosenCats.length}/{categories.length}</span>
+                </div>
+                <div className="cat-groups">
+                  {grouped.map(([group, cats]) => (
+                    <details key={group} className="cat-group" open>
+                      <summary>
+                        <span className="area-label">{group}</span>
+                        <span className="area-state">{cats.filter((c) => selected.has(c.id)).length}/{cats.length}</span>
+                      </summary>
+                      <div className="chips">
+                        {cats.map((c) => (
+                          <button
+                            key={c.id}
+                            className={`chip small ${selected.has(c.id) ? 'on' : ''}`}
+                            onClick={() => toggleCategory(c.id)}
+                          >
+                            {c.icon} {c.label}
+                          </button>
+                        ))}
+                      </div>
+                    </details>
+                  ))}
+                </div>
+              </>
+            ) : (
               <div className="random-box">
                 <label>
                   随机项目个数：<b>{randomCount}</b>
-                  <input
-                    type="range" min={1} max={5} value={randomCount}
-                    onChange={(e) => setRandomCount(Number(e.target.value))}
-                  />
+                  <input type="range" min={1} max={5} value={randomCount} onChange={(e) => setRandomCount(Number(e.target.value))} />
                 </label>
-                <p className="hint">🍜 吃饭为必选项，任何模式下都会包含</p>
-                <button className="primary small" onClick={pickRandomProjects}>🎲 抽一组项目看看</button>
+                <button className="primary small" onClick={pickRandomProjects}>🎲 抽一组看看</button>
               </div>
-            ) : (
-              <>
-                <p className="hint">
-                  🍜 吃饭为必选项，不可取消；其余可多选
-                  {availableCats && <>（灰显=该城市暂无数据）</>}
-                </p>
-                {grouped.map(([group, cats]) => (
-                  <div key={group} className="group">
-                    <span className="group-name">{group}</span>
-                    <div className="chips">
-                      {cats.map((c) => {
-                        const on = selected.has(c.id);
-                        const locked = requiredIds.includes(c.id);
-                        const empty = !!availableCats && !availableCats.has(c.id) && !locked;
-                        return (
-                          <button
-                            key={c.id}
-                            className={`chip ${on ? 'on' : ''} ${locked ? 'locked' : ''} ${empty ? 'empty' : ''}`}
-                            onClick={() => toggle(c.id)}
-                            title={locked ? '吃饭为必选项' : empty ? '该城市暂无此类数据（可先跑采集器）' : c.desc}
-                          >
-                            {c.icon} {c.label}{locked && ' 🔒'}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ))}
-              </>
             )}
           </div>
 
+          {/* ③ 过滤 */}
           <div className="block">
-            <div className="block-head"><h2>③ 过滤（可选）</h2></div>
+            <div className="block-head"><h2>③ 过滤</h2></div>
             <div className="filters">
               <label className="switch">
                 <input type="checkbox" checked={excludeVisited} onChange={(e) => setExcludeVisited(e.target.checked)} />
@@ -413,10 +454,9 @@ export default function App() {
 
           <div className="cta">
             <div className="picked">
-              当前：<b>{scopeLabel}</b> ·{' '}
-              {mode === 'random'
-                ? `随机 ${randomCount} 个项目（含吃饭）`
-                : `${chosenCats.length} 个项目：${chosenCats.map((c) => c.icon + c.label).join(' ')}`}
+              {scopeLabel}
+              {areas.length > 0 && ` · ${areas.map((a) => a.name).join(' ∩ ')}`}
+              {mode === 'manual' ? ` · ${chosenCats.length} 个项目（默认全选）` : ` · 随机 ${randomCount} 个项目`}
             </div>
             <button className="primary" onClick={spin} disabled={(scope === 'city' && !city) || spinning}>
               {spinning ? '转动中…' : '🎡 开始转动'}
@@ -435,12 +475,12 @@ export default function App() {
           <div className="stage-meta">
             {result ? (
               <>
-                候选池 <b>{result.candidateCount}</b> 家 · 上盘 {result.segments.length} 个扇区 · {result.cityLabel}
-                {result.poolCityCount > 1 && <> · 横跨 {result.poolCityCount} 个城市</>}
+                候选 <b>{result.candidateCount}</b> 家 · {result.segments.length} 扇区 · {result.cityLabel}
+                {result.poolCityCount > 1 && <> · {result.poolCityCount} 城</>}
                 {result.fromLocal && <> · 本地计算</>}
               </>
             ) : (
-              <>选好地区和项目，点「开始转动」</>
+              <>选好地区和项目，点击转动</>
             )}
           </div>
 
@@ -453,26 +493,21 @@ export default function App() {
                   <p className="result-meta">
                     {shownPlace.categoryLabel} · {shownPlace.city}
                     {shownPlace.district ? `·${shownPlace.district}` : ''}
+                    {shownPlace.businessArea ? ` · ${shownPlace.businessArea}` : ''}
                     {shownPlace.rating > 0 && <> · ⭐ {shownPlace.rating}</>}
                     {shownPlace.cost > 0 && <> · 人均 ¥{shownPlace.cost}</>}
                   </p>
                 </div>
               </div>
-              {shownPlace.why && <p className="result-why">💡 {shownPlace.why}</p>}
+              {shownPlace.why && <p className="result-why">💡 {shownPlace.why}{shownPlace.opentime ? ` · ${shownPlace.opentime}` : ''}</p>}
               <div className="result-actions">
                 <a className="primary" href={result.link.primary} target="_blank" rel="noreferrer">
-                  {result.link.primaryKind === 'place' ? '📍 在高德打开详情页' : '📍 在高德中搜索这家'}
+                  {result.link.primaryKind === 'place' ? '📍 高德详情页' : '📍 在高德中搜索'}
                 </a>
-                {result.link.navi && (
-                  <a className="ghost" href={result.link.navi} target="_blank" rel="noreferrer">🧭 一键导航</a>
-                )}
+                {result.link.navi && <a className="ghost" href={result.link.navi} target="_blank" rel="noreferrer">🧭 导航</a>}
                 <button className="ghost" onClick={markVisited}>✅ 就去这家</button>
                 <button className="ghost" onClick={spin}>🔄 再转一次</button>
               </div>
-              {result.place.coordPrecision === 'approx' && (                <p className="hint tiny">
-                  注：当前为种子数据的近似坐标；配置高德 Key 并采集后会自动升级为精确 poiid 与坐标。
-                </p>
-              )}
               {visitedMsg && <p className="ok">{visitedMsg}</p>}
             </div>
           )}
@@ -480,8 +515,7 @@ export default function App() {
       </main>
 
       <footer className="foot">
-        数据来源：高德开放平台 Web 服务 API（地点）· 小红书/大众点评等平台反爬严格，改为「打开原站搜索」外链
-        {offline && <> · 当前离线，使用本地缓存数据（{cacheLabel}）</>}
+        地点数据来自高德开放平台 · 点击结果卡可直接跳转高德查看与导航
       </footer>
     </div>
   );

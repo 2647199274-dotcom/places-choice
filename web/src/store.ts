@@ -3,7 +3,7 @@
  * 首次联网时把 /api/dataset 的完整数据写入 localStorage，
  * 之后断网也能转盘，并能记住"就去这家/已去过"。
  */
-import type { ApiCategory, ApiCity, ApiPlace, ApiProvince } from './api.ts';
+import type { ApiArea, ApiCategory, ApiCity, ApiPlace, ApiProvince } from './api.ts';
 
 const DATASET_KEY = 'trip-roulette:dataset:v1';
 const VISITED_KEY = 'trip-roulette:visited:v1';
@@ -16,6 +16,8 @@ export interface CachedDataset {
   cities: ApiCity[];
   provinces: ApiProvince[];
   districts: { adcode: string; name: string; parent: string }[];
+  /** 各城市的区域维度（地铁/地区/商场/商圈） */
+  areas?: Record<string, Record<string, ApiArea[]>>;
   places: ApiPlace[];
 }
 

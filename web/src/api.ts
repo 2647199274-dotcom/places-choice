@@ -3,7 +3,10 @@ export interface ApiCategory {
   label: string;
   icon: string;
   group: string;
+  /** 永远在列且不可取消 */
   required: boolean;
+  /** 随机抽项目时必定包含（吃饭） */
+  alwaysInRandom?: boolean;
   weight: number;
   desc: string;
 }
@@ -48,6 +51,12 @@ export interface ApiPlace {
   markerUrl?: string | null;
   naviUrl?: string | null;
   coordPrecision: string;
+  /** 高德商圈名（如「杭州新天地」） */
+  businessArea?: string;
+  typecode?: string;
+  tel?: string;
+  opentime?: string;
+  photo?: string;
 }
 
 export interface ApiSegment {
@@ -77,6 +86,24 @@ export interface ApiDrawResult {  city: string;
 
 /** 抽签地区范围 */
 export type DrawScope = 'city' | 'randomCity' | 'province';
+
+/** 区域维度（美团式筛选） */
+export type AreaDimension = 'district' | 'businessArea' | 'mall' | 'metro';
+
+export interface ApiArea {
+  key: string;
+  name: string;
+  dimension: AreaDimension;
+  placeCount: number;
+  lng?: number;
+  lat?: number;
+}
+
+export interface AreaSelection {
+  dimension: AreaDimension;
+  key: string;
+  name: string;
+}
 
 /**
  * API 基地址：
@@ -118,8 +145,14 @@ export const api = {
     randomize?: boolean;
     randomCount?: number;
     segmentCount?: number;
+    areas?: { dimension: AreaDimension; key: string }[];
     filters?: { excludeVisited?: boolean; minRating?: number; maxCost?: number };
   }) => j<ApiDrawResult>('/api/draw', { method: 'POST', body: JSON.stringify(payload) }),
+  /** 区域维度列表：地区 / 商圈 / 商场 / 地铁 */
+  areas: (cityAdcode: string, categories: string[] = []) =>
+    j<{ city: string; district?: ApiArea[]; businessArea?: ApiArea[]; mall?: ApiArea[]; metro?: ApiArea[] }>(
+      `/api/areas?city=${encodeURIComponent(cityAdcode)}${categories.length ? `&categories=${categories.join(',')}` : ''}`,
+    ),
   /** 一次性拉全量数据集（前端缓存到 localStorage，供离线抽签） */
   dataset: () =>
     j<{
@@ -129,6 +162,7 @@ export const api = {
       cities: ApiCity[];
       provinces: ApiProvince[];
       districts: { adcode: string; name: string; parent: string }[];
+      areas: Record<string, Record<string, ApiArea[]>>;
       places: ApiPlace[];
     }>('/api/dataset'),
   markVisited: (placeId: string, note?: string) =>

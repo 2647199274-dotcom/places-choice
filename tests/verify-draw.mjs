@@ -9,15 +9,25 @@ const categories = loadCategories();
 const seed = loadSeed();
 const places = seed.places;
 const problems = [];
-
-// ---- 1. 必选项规则：人工与随机模式都必须含吃饭 ----
 const requiredIds = categories.filter((c) => c.required).map((c) => c.id);
-console.log(`[规则] 必选分类 = ${requiredIds.join(',')}`);
 
-const manual = resolveCategories(categories, ['ktv']).map((c) => c.id);
-if (!manual.includes('eat')) problems.push('人工选项目时未强制包含吃饭');
-console.log(`[规则] 人工只选 KTV → 实际项目 ${manual.join(',')}  ✅ 含吃饭`);
+// ---- 1. 吃饭规则：人工可取消，但随机模式必定包含；默认全选时也在列 ----
+const pinnedForRandom = categories.filter((c) => c.required || c.alwaysInRandom).map((c) => c.id);
+const eatAlways = categories.filter((c) => c.alwaysInRandom).map((c) => c.id);
+console.log(`[规则] 不可取消(required) = ${requiredIds.join(',') || '（无）'}`);
+console.log(`[规则] 随机模式必含(alwaysInRandom) = ${eatAlways.join(',')}`);
 
+// 人工选择：不选 eat 就不该出现（用户要求"不用锁定吃饭"）
+const manualNoEat = resolveCategories(categories, ['ktv']).map((c) => c.id);
+console.log(`[规则] 人工只选 KTV → ${manualNoEat.join(',')} ${manualNoEat.includes('eat') ? '❌ 不该强制带吃饭' : '✅ 吃饭已可取消'}`);
+if (manualNoEat.includes('eat')) problems.push('人工选择时不该强制包含吃饭（用户要求可取消）');
+
+// 人工全选：吃饭在列
+const manualAll = resolveCategories(categories, categories.map((c) => c.id)).map((c) => c.id);
+if (!manualAll.includes('eat')) problems.push('人工全选时吃饭应包含');
+console.log(`[规则] 人工全选 → ${manualAll.length} 个项目，含吃饭 ${manualAll.includes('eat')} ✅`);
+
+// 随机：500 次必须都含吃饭
 let missing = 0;
 for (let i = 0; i < 500; i++) {
   const ids = randomCategoryIds(categories, 2 + (i % 4));
@@ -26,12 +36,11 @@ for (let i = 0; i < 500; i++) {
 if (missing > 0) problems.push(`随机模式 500 次中有 ${missing} 次未包含吃饭`);
 console.log(`[规则] 随机抽项目 500 次 → 未含吃饭 ${missing} 次  ✅`);
 
-// 随机模式的个数上限是否正确（必选不计入 count）
+// 随机模式的个数上限是否正确（必含项不计入 count）
 const sizes = new Set();
 for (let i = 0; i < 200; i++) sizes.add(randomCategoryIds(categories, 3).length);
-const expected = new Set([requiredIds.length + 3]);
-if ([...sizes].some((s) => s !== requiredIds.length + 3)) problems.push(`随机项目个数异常: ${[...sizes].join(',')}`);
-console.log(`[规则] 随机 3 个项目 → 实际个数集合 ${[...sizes].join(',')}（= 必选 ${requiredIds.length} + 3）`);
+if ([...sizes].some((s) => s !== pinnedForRandom.length + 3)) problems.push(`随机项目个数异常: ${[...sizes].join(',')}`);
+console.log(`[规则] 随机 3 个项目 → 实际个数集合 ${[...sizes].join(',')}（= 必含 ${pinnedForRandom.length} + 3）`);
 
 // ---- 2. 公平性：落点分布应与扇区占比一致（卡方检验） ----
 const region = { adcode: '330100', name: '杭州市' };
@@ -115,4 +124,4 @@ if (problems.length) {
   console.log(`❌ 抽签引擎校验未通过:\n   - ${problems.join('\n   - ')}`);
   process.exit(1);
 }
-console.log('✅ 抽签引擎校验通过：吃饭必选（人工+随机）、落点分布与权重一致、冷却/过滤/空池边界均正确');
+console.log('✅ 抽签引擎校验通过：吃饭人工可取消但随机必含、落点分布与权重一致、冷却/过滤/空池边界均正确');

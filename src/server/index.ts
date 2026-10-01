@@ -6,7 +6,8 @@ import { fileURLToPath } from 'node:url';
 import { randomInt } from 'node:crypto';
 import { loadCategories, ensureSeeded, getPlaces, getPlacesMulti, getRegions, getVisitedIds, getRecentDrawIds, recordDraw, markVisited, countPlaces, getCitySummaries } from '../db/index.ts';
 import { draw, randomCategoryIds, resolveCategories } from '../core/draw.ts';
-import type { DrawResult, Place } from '../core/types.ts';
+import { listAreas, buildMetroLinks, filterPlacesByAreas } from '../core/areas.ts';
+import type { AreaDimension, DrawResult, Place } from '../core/types.ts';
 
 const PORT = Number(process.env.PORT ?? 5178);
 const HOST = '127.0.0.1';
@@ -54,6 +55,27 @@ app.get('/api/regions', async () => {
 
 app.get('/api/cities', async () => ({ cities: await getCitySummaries() }));
 
+/** 区域维度列表（模仿美团：地铁 / 地区 / 商场 / 商圈） */
+app.get('/api/areas', async (req) => {
+  const q = req.query as { city?: string; dimension?: string; categories?: string };
+  const cityAdcode = q.city ?? '330100';
+  const catIds = resolveCategories(categories, (q.categories ?? '').split(',').filter(Boolean)).map((c) => c.id);
+  const dimensions: AreaDimension[] = ['district', 'businessArea', 'mall', 'metro'];
+  const wanted = q.dimension ? (q.dimension as AreaDimension) : undefined;
+  const out: Record<string, unknown> = { city: cityAdcode };
+  for (const dim of wanted ? [wanted] : dimensions) {
+    out[dim] = await listAreas(cityAdcode, dim, catIds.length ? catIds : undefined);
+  }
+  return out;
+});
+
+/** 重建 地点↔地铁站 关联（采集完地铁站后调用，或数据变化时刷新） */
+app.post('/api/areas/rebuild-metro', async (req) => {
+  const body = (req.body ?? {}) as { city?: string };
+  const linked = await buildMetroLinks(body.city ?? '330100');
+  return { ok: true, linked };
+});
+
 /**
  * 一次性导出完整数据集：前端首次加载后缓存到 localStorage，
  * 断网/后端不可达时用同一套抽签规则在本地转盘（APK 离线体验的基础）。
@@ -69,6 +91,17 @@ app.get('/api/dataset', async () => {
     p.cities += 1;
     p.total += c.total;
   }
+  // 区域维度（地铁/地区/商场/商圈）也一并导出，离线时同样能按区域筛
+  const areaDims: AreaDimension[] = ['district', 'businessArea', 'mall', 'metro'];
+  const areas: Record<string, Record<string, unknown>> = {};
+  for (const c of cities) {
+    const per: Record<string, unknown> = {};
+    for (const dim of areaDims) {
+      const list = await listAreas(c.adcode, dim);
+      if (list.length) per[dim] = list;
+    }
+    areas[c.adcode] = per;
+  }
   return {
     generatedAt: new Date().toISOString(),
     categories,
@@ -76,6 +109,7 @@ app.get('/api/dataset', async () => {
     cities,
     provinces: [...provinceMap.values()],
     districts: regions.filter((r) => r.level === 3),
+    areas,
     places: allPlaces,
   };
 });
@@ -114,6 +148,8 @@ app.post('/api/draw', async (req, reply) => {
     randomize?: boolean;
     randomCount?: number;
     segmentCount?: number;
+    /** 区域维度选择（取交集）：地区/商圈/商场/地铁 */
+    areas?: { dimension: AreaDimension; key: string }[];
     filters?: { excludeVisited?: boolean; minRating?: number; maxCost?: number };
   };
 
@@ -149,7 +185,16 @@ app.post('/api/draw', async (req, reply) => {
     categoryIds = randomCategoryIds(categories, body.randomCount ?? 3, (n) => randomInt(n));
   }
   const chosen = resolveCategories(categories, categoryIds).map((c) => c.id);
-  const places = await getPlacesMulti(cityPool, chosen);
+  let places = await getPlacesMulti(cityPool, chosen);
+
+  // 区域维度筛选（美团式）：地区 / 商圈 / 商场 / 地铁 多选取交集
+  const areas = body.areas ?? [];
+  if (areas.length > 0) {
+    const areaFiltered = await filterPlacesByAreas(cityPool[0], areas, chosen);
+    const keep = new Set(areaFiltered.map((p) => p.id));
+    places = places.filter((p) => keep.has(p.id));
+  }
+
   const [visited, recent] = await Promise.all([getVisitedIds(), getRecentDrawIds(5)]);
 
   const result = draw({

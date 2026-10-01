@@ -7,7 +7,7 @@
  *
  * 规则一致性由 tests/verify-local.mjs 校验（同样本对比落点分布）。
  */
-import type { ApiCategory, ApiPlace } from './api.ts';
+import type { ApiCategory, ApiPlace, AreaDimension } from './api.ts';
 
 export interface LocalSegment {
   placeId: string;
@@ -39,7 +39,7 @@ export function cryptoRandomInt(maxExclusive: number): number {
 
 export function resolveCategories(categories: ApiCategory[], selectedIds: string[]): ApiCategory[] {
   const chosen = new Map<string, ApiCategory>();
-  // 吃饭类永远在列（人工与随机模式都强制包含）
+  // 只有真正 required 的才强制在列（吃饭已改为可取消，人工选择时由用户勾选决定）
   for (const c of categories.filter((c) => c.required)) chosen.set(c.id, c);
   for (const id of selectedIds) {
     const c = categories.find((x) => x.id === id);
@@ -53,8 +53,10 @@ export function randomCategoryIds(
   count: number,
   rand: (n: number) => number = cryptoRandomInt,
 ): string[] {
-  const required = categories.filter((c) => c.required).map((c) => c.id);
-  const remaining = categories.filter((c) => !c.required);
+  // 吃饭这类 alwaysInRandom 必定包含（保住"选项里一定有吃饭"）
+  const pinned = categories.filter((c) => c.required || c.alwaysInRandom).map((c) => c.id);
+  const pinnedSet = new Set(pinned);
+  const remaining = categories.filter((c) => !pinnedSet.has(c.id));
   const picked: string[] = [];
   const n = Math.max(0, Math.min(count, remaining.length));
   for (let i = 0; i < n; i++) {
@@ -69,7 +71,7 @@ export function randomCategoryIds(
     picked.push(remaining[idx].id);
     remaining.splice(idx, 1);
   }
-  return [...required, ...picked];
+  return [...pinned, ...picked];
 }
 
 function weightOf(p: ApiPlace, cats: Map<string, ApiCategory>): number {
@@ -88,8 +90,25 @@ export interface LocalDrawInput {
   recentPlaceIds?: string[];
   visitedPlaceIds?: string[];
   filters?: { excludeVisited?: boolean; minRating?: number; maxCost?: number; cooldown?: number };
+  /** 区域筛选（与后端同规则：多维度取交集） */
+  areas?: { dimension: AreaDimension; key: string; name?: string }[];
   segmentCount?: number;
   rand?: (n: number) => number;
+}
+
+/** 判断一个地点是否落在所选区域内（离线可用：区县/商圈按名称，商场/地铁按缓存里的名称匹配） */
+function inAreas(p: ApiPlace, areas: NonNullable<LocalDrawInput['areas']>): boolean {
+  return areas.every((a) => {
+    switch (a.dimension) {
+      case 'district':
+        return p.district === a.name || p.district === a.key;
+      case 'businessArea':
+        return (p.businessArea ?? '') === a.name || (p.businessArea ?? '') === a.key;
+      // 商场/地铁的关联关系只在后端算（离线时不参与过滤，避免误杀）
+      default:
+        return true;
+    }
+  });
 }
 
 export function localDraw(input: LocalDrawInput): LocalDrawResult | null {
@@ -106,6 +125,7 @@ export function localDraw(input: LocalDrawInput): LocalDrawResult | null {
     const inScope = pool.has(p.cityAdcode ?? '') || pool.has(p.regionAdcode ?? '');
     if (!inScope) return false;
     if (!catIds.has(p.categoryId)) return false;
+    if (input.areas?.length && !inAreas(p, input.areas)) return false;
     if (f.excludeVisited && visited.has(p.id)) return false;
     if (f.minRating != null && p.rating < f.minRating) return false;
     if (f.maxCost != null && p.cost > 0 && p.cost > f.maxCost) return false;

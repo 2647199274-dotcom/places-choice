@@ -45,11 +45,16 @@ if (!key) {
 if (args.check) {
   console.log(`🔑 Key: ${key.slice(0, 6)}…${key.slice(-4)}`);
   try {
-    const { pois, count } = await searchPlaces({ key, keywords: '火锅', region: '330100', pageSize: 5 });
+    const { pois, count } = await searchPlaces({ key, keywords: '火锅', region: '330100', pageNum: 1 });
     console.log(`✅ Key 可用：杭州「火锅」远程共 ${count} 条，本页返回 ${pois.length} 条`);
-    if (pois[0]) {
-      console.log(`   示例：${pois[0].name} | ${pois[0].address} | ${pois[0].location} | id=${pois[0].id}`);
+    const p0 = pois[0];
+    if (p0) {
+      console.log(`   示例：${p0.name} | ${p0.address} | ${p0.location}`);
+      console.log(`   字段：id=${p0.id} 商圈=${p0.business_area ?? '-'} 区县=${p0.adname} 评分=${p0.biz_ext?.rating ?? '-'} 人均=${p0.biz_ext?.cost ?? '-'}`);
     }
+    // 顺便对比 v3 分页能力（v5 会被截断）
+    const p2 = await searchPlaces({ key, keywords: '火锅', region: '330100', pageNum: 2, skipRaw: true });
+    console.log(`✅ v3 分页可用：第 2 页返回 ${p2.pois.length} 条，与第 1 页重复 ${p2.pois.filter((x) => pois.some((y) => y.id === x.id)).length} 条`);
   } catch (e) {
     console.error(`❌ Key 不可用：${(e as Error).message}`);
     process.exit(2);

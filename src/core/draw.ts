@@ -21,12 +21,18 @@ export interface DrawInput {
   rand?: (maxExclusive: number) => number;
 }
 
+/** 强制在列的分类：required（不可取消）+ alwaysInRandom（吃饭，随机模式必含） */
+export function pinnedCategoryIds(categories: Category[], forRandom: boolean): string[] {
+  return categories
+    .filter((c) => c.required || (forRandom && c.alwaysInRandom))
+    .map((c) => c.id);
+}
+
 export function resolveCategories(categories: Category[], selectedIds: string[]): Category[] {
-  const required = categories.filter((c) => c.required);
+  // 人工选择：只保留用户勾选的 + 真正 required 的（吃饭已不是 required，所以可以取消）
   const byId = new Map(categories.map((c) => [c.id, c]));
   const chosen = new Map<string, Category>();
-  // 吃饭类永远在列（人工选择与随机模式都强制包含）
-  for (const c of required) chosen.set(c.id, c);
+  for (const c of categories.filter((c) => c.required)) chosen.set(c.id, c);
   for (const id of selectedIds) {
     const c = byId.get(id);
     if (c) chosen.set(c.id, c);
@@ -35,8 +41,10 @@ export function resolveCategories(categories: Category[], selectedIds: string[])
 }
 
 export function randomCategoryIds(categories: Category[], count: number, rand: (n: number) => number = (n) => randomInt(n)): string[] {
-  const required = categories.filter((c) => c.required).map((c) => c.id);
-  const pool = categories.filter((c) => !c.required);
+  // 吃饭这类 alwaysInRandom 必定包含（但不计入"随机个数"）
+  const pinned = pinnedCategoryIds(categories, true);
+  const pinnedSet = new Set(pinned);
+  const pool = categories.filter((c) => !pinnedSet.has(c.id));
   const picked: string[] = [];
   const remaining = [...pool];
   const n = Math.max(0, Math.min(count, remaining.length));
@@ -53,7 +61,7 @@ export function randomCategoryIds(categories: Category[], count: number, rand: (
     picked.push(remaining[idx].id);
     remaining.splice(idx, 1);
   }
-  return [...required, ...picked];
+  return [...pinned, ...picked];
 }
 
 /** 过滤出可抽的候选池 */
@@ -95,8 +103,7 @@ function weightOf(p: Place, cats: Map<string, Category>): number {
 export function draw(input: DrawInput): DrawResult | null {
   const rand = input.rand ?? ((n: number) => randomInt(n));
   const cats = new Map(input.categories.map((c) => [c.id, c]));
-  const catsChosen = resolveCategories(input.categories, input.categoryIds);
-  const pool = buildPool(input);
+  const catsChosen = resolveCategories(input.categories, input.categoryIds);  const pool = buildPool(input);
   if (pool.length === 0) return null;
 
   // 按权重降序取前 segmentCount 个；不足则全取（但至少 2 个才能成盘）

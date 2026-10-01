@@ -46,8 +46,10 @@ console.log(`[边界] 单城市+单分类 → ${one.length} 条；11 城市+3 �
 // ---- 2. 每个城市都能抽出结果（用该城市真的有数据的分类） ----
 console.log('\n[覆盖] 逐城市抽签（用该城市每个分类）：');
 let cityFails = 0;
+// area_* 是"区域维度"用的伪分类（地铁站/商场），不参与抽签，跳过
+const isRealCategory = (id) => !id.startsWith('area_');
 for (const city of cities) {
-  const cats = city.categories.length ? city.categories : ['eat'];
+  const cats = (city.categories.length ? city.categories : ['eat']).filter(isRealCategory);
   for (const catId of cats) {
     const places = await getPlacesMulti([city.adcode], [catId]);
     if (places.length === 0) {

@@ -25,6 +25,30 @@ export interface Place {
   naviUrl: string | null;
   coordPrecision: 'approx' | 'exact';
   fetchedAt: string;
+  /** 高德商圈名，如「杭州新天地」（用于按商圈筛选区域） */
+  businessArea?: string;
+  /** 高德末级品类码，如 050117 */
+  typecode?: string;
+  tel?: string;
+  opentime?: string;
+  photo?: string;
+}
+
+/** 区域维度（"按地铁/地区/商场/商圈选"用的聚合结果） */
+export type AreaDimension = 'district' | 'businessArea' | 'mall' | 'metro';
+
+export interface AreaOption {
+  /** 维度内唯一键（区县 adcode / 商圈名 / 商场 poiid / 地铁站名） */
+  key: string;
+  name: string;
+  dimension: AreaDimension;
+  /** 该区域在我们库里关联的地点数量 */
+  placeCount: number;
+  /** 中心坐标（商场/地铁有，区县/商圈为聚合中心） */
+  lng?: number;
+  lat?: number;
+  /** 地铁：所属线路 */
+  lines?: string[];
 }
 
 export interface Category {
@@ -32,8 +56,10 @@ export interface Category {
   label: string;
   icon: string;
   group: string;
-  /** 吃饭类：人工选择与随机模式都必须包含 */
+  /** true = 永远在列且不可取消（当前项目没有这种分类） */
   required: boolean;
+  /** true = 随机抽项目时也必定包含（吃饭：保住"选项里一定有吃饭"，但人工选择时可取消） */
+  alwaysInRandom?: boolean;
   weight: number;
   amapTypes: string;
   keywords: string[];

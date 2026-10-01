@@ -89,11 +89,52 @@ h2 { margin: 0; font-size: 14px; color: #d8deff; letter-spacing: 0.5px; }
 .chip.locked { cursor: default; }
 .chip.locked.on { box-shadow: 0 6px 18px rgba(179, 136, 255, 0.45); }
 .chip.empty { opacity: 0.42; }
+.chip.small { padding: 5px 10px; font-size: 12.5px; }
+.chip.ghost-chip { background: transparent; border-style: dashed; color: var(--muted); }
 .chip-count {
   margin-left: 5px; padding: 1px 5px; border-radius: 999px; font-size: 10.5px; font-style: normal;
   background: rgba(255, 255, 255, 0.14); color: #c9d1f5;
 }
 .chip.on .chip-count { background: rgba(0, 0, 0, 0.22); color: #fff; }
+
+/* ---------- 可折叠分组（区域维度 / 项目分组） ---------- */
+.area-dims, .cat-groups { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
+.area-dim, .cat-group {
+  border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03); overflow: hidden;
+}
+.area-dim > summary, .cat-group > summary {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  padding: 9px 12px; cursor: pointer; list-style: none; font-size: 13px; color: #dfe4ff;
+  user-select: none;
+}
+.area-dim > summary::-webkit-details-marker, .cat-group > summary::-webkit-details-marker { display: none; }
+.area-dim > summary::after, .cat-group > summary::after {
+  content: '▾'; font-size: 11px; color: var(--muted); transition: transform 0.15s ease;
+}
+.area-dim[open] > summary::after, .cat-group[open] > summary::after { transform: rotate(180deg); }
+.area-dim > summary:hover, .cat-group > summary:hover { background: rgba(255, 255, 255, 0.05); }
+.area-label { font-weight: 600; letter-spacing: 0.3px; }
+.area-state { color: var(--muted); font-size: 12px; display: inline-flex; align-items: center; gap: 4px; }
+.area-body { display: flex; flex-wrap: wrap; gap: 6px; padding: 4px 12px 12px; }
+
+/* ---------- 已选区域标签 ---------- */
+.area-picked { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.tag {
+  display: inline-flex; align-items: center; gap: 5px; padding: 5px 10px; border-radius: 999px;
+  font-size: 12px; cursor: pointer; color: #dfe6ff;
+  background: rgba(108, 140, 255, 0.18); border: 1px solid rgba(108, 140, 255, 0.42);
+}
+.tag:hover { background: rgba(108, 140, 255, 0.3); }
+.tag.clear { background: transparent; border-color: rgba(255, 255, 255, 0.16); color: var(--muted); }
+
+/* ---------- 全选行 ---------- */
+.select-all {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 7px 12px; border-radius: 10px; background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+.select-all .count { font-size: 12px; color: var(--muted); }
 
 .group { margin-bottom: 10px; }
 .group-name {

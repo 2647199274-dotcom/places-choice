@@ -1,13 +1,14 @@
 {
-  "$comment": "项目（转盘扇区类别）体系。amapTypes 用于高德 v5/place/text 的 types 参数；keywords 为高德搜索关键词（types 无结果时回退）。requiredForDining=true 表示'吃饭'类，人工选择与随机模式都必须包含。",
-  "version": 1,
+  "$comment": "项目（转盘扇区类别）体系。required=true 表示永远不可取消（当前没有）；alwaysInRandom=true 表示'随机抽项目时也必定包含'（吃饭就是这种）。amapTypes 用于高德搜索的 types 参数；keywords 为关键词（types 无结果时回退）。",
+  "version": 2,
   "categories": [
     {
       "id": "eat",
       "label": "吃饭",
       "icon": "🍜",
       "group": "吃饭",
-      "required": true,
+      "required": false,
+      "alwaysInRandom": true,
       "weight": 3.0,
       "amapTypes": "050100|050200|050300|050400|050500|050600",
       "keywords": ["美食", "中餐厅", "杭帮菜"],

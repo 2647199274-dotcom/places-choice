@@ -21,9 +21,10 @@ const mock = http.createServer((req, res) => {
   requested.push(`${url.pathname}?${url.searchParams.toString()}`);
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
 
-  if (url.pathname === '/v5/place/text') {
+  if (url.pathname === '/v3/place/text') {
     const kw = url.searchParams.get('keywords') ?? '';
-    const page = Number(url.searchParams.get('page_num') ?? 1);
+    const page = Number(url.searchParams.get('page') ?? 1);
+    // 高德 v3 字段结构：评分/人均在 biz_ext 里，商圈在 business_area
     if (page === 1) {
       res.end(JSON.stringify({
         status: '1', info: 'OK', infocode: '10000', count: '3',
@@ -32,14 +33,15 @@ const mock = http.createServer((req, res) => {
             id: `B0MOCK${kw.length}01`, name: `测试火锅店A(${kw})`, address: '杭州市上城区测试路1号',
             location: '120.171234,30.249876', type: '餐饮服务;中餐厅;火锅店', typecode: '050118',
             cityname: '杭州市', adname: '上城区', adcode: '330102', pname: '浙江省',
-            business: { rating: '4.6', cost: '128', tel: '0571-88880001', opentime_today: '10:00-22:00' },
+            business_area: '湖滨', tel: '0571-88880001',
+            biz_ext: { rating: '4.6', cost: '128.00', opentime_today: '10:00-22:00' },
             photos: [{ title: '门店', url: 'https://example.com/a.jpg' }],
           },
           {
             id: `B0MOCK${kw.length}02`, name: `测试火锅店B(${kw})`, address: '杭州市西湖区测试路2号',
             location: '120.130123,30.259612', type: '餐饮服务;中餐厅;火锅店',
             cityname: '杭州市', adname: '西湖区', adcode: '330106', pname: '浙江省',
-            business: { rating: '4.3', cost: '96' },
+            business_area: '西湖', biz_ext: { rating: '4.3', cost: '96.00' },
           },
           // 故意给一条无坐标的脏数据，验证兜底不崩
           {
@@ -107,7 +109,7 @@ console.log(`[test] 城市查询(adcode 330100) 命中 mock POI ${mockRows.lengt
 console.log('      ↑ 关键点：高德返回的是区县 adcode(330102 等)，按城市查询必须靠 city_adcode 命中');
 const sample = mockRows.find((p) => p.name.includes('店A')) ?? mockRows[0];
 for (const p of [sample, mockRows.find((p) => p.coordPrecision === 'approx')].filter(Boolean)) {
-  console.log(`  - ${p.name.padEnd(22)} 评分=${p.rating} 人均=${p.cost} 城市码=${p.cityAdcode} 区县码=${p.regionAdcode} 坐标=${p.coordPrecision} (${p.lng},${p.lat})`);
+  console.log(`  - ${p.name.padEnd(22)} 评分=${p.rating} 人均=${p.cost} 商圈=${p.businessArea || '-'} 城市码=${p.cityAdcode} 区县码=${p.regionAdcode} 坐标=${p.coordPrecision}`);
   console.log(`      高德详情页: ${p.amapUrl}`);
   console.log(`      搜索兜底:   ${p.uriSearchUrl.slice(0, 110)}`);
   console.log(`      导航:       ${p.naviUrl ? p.naviUrl.slice(0, 100) : '(无坐标，已安全降级为 null)'}`);
@@ -137,6 +139,11 @@ if (a && a.rating !== 4.6) problems.push(`评分解析错误: ${a?.rating}`);
 if (a && a.cost !== 128) problems.push(`人均解析错误: ${a?.cost}`);
 if (a && a.cityAdcode !== '330100') problems.push(`cityAdcode 应为 330100，实际 ${a?.cityAdcode}`);
 if (a && a.regionAdcode !== '330102') problems.push(`regionAdcode 应保留高德返回的区县码 330102，实际 ${a?.regionAdcode}`);
+// v3 新增字段：商圈 / 电话 / 营业时间 / 图片（区域维度与详情卡都要用）
+if (a && a.businessArea !== '湖滨') problems.push(`商圈解析错误: ${a?.businessArea}`);
+if (a && !a.tel) problems.push('电话未解析');
+if (a && !a.opentime) problems.push('营业时间未解析');
+if (a && !a.photo) problems.push('图片未解析');
 
 // ---- 采集目标解析：单城市 / 全省 ----
 const cities = await getCitySummaries();
