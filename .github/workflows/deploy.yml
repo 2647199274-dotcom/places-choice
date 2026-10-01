@@ -25,12 +25,16 @@ jobs:
           node-version: 22
           cache: npm
 
-      # better-sqlite3 在 Linux runner 上重新编译；本项目导出数据集时若数据库不可用会自动回退种子数据
+      # better-sqlite3 在 Linux runner 上重新编译（本项目线上构建不需要数据库，见下一步说明）
       - run: npm ci
 
-      # 导出静态数据集（Pages 上没有后端，前端靠这个文件取数据）
-      - name: Export static dataset
-        run: node scripts/export-static-dataset.mjs
+      # ⚠️ 这里**故意不重新导出数据集**，直接用仓库里已提交的快照（web/public/data/dataset.json）。
+      # 原因（真实事故）：data/*.db 是 gitignore 的，CI 上 openDb() 会**新建空数据库**而不是返回 null，
+      # 于是 ensureSeeded() 灌进 647 条种子数据、被当成 "source: sqlite" 的真实数据导出，
+      # 覆盖掉仓库里 25820 条的快照 → 线上只剩 671 条 / 11 城（浙江种子），且界面上看不出异常。
+      # 正确做法：在有真实数据库的机器上跑 npm run export:static，提交快照，CI 只用不写。
+      - name: Verify static dataset
+        run: node scripts/verify-static-dataset.mjs
 
       # 部署在子路径 /<repo>/ 下，base 必须与仓库名一致，否则资源 404 白屏
       - name: Build web

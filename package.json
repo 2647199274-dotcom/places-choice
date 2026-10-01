@@ -11,6 +11,7 @@
     "collect": "node src/cli/collect.ts",
     "collect:areas": "node src/cli/collect-areas.ts",
     "export:static": "node scripts/export-static-dataset.mjs",
+    "verify:dataset": "node scripts/verify-static-dataset.mjs",
     "dedupe": "node scripts/dedupe-seed.mjs",
     "icons": "node scripts/generate-icons.mjs",
     "serve:dist": "node scripts/serve-dist.mjs",
@@ -28,7 +29,7 @@
     "test:areas": "node tests/verify-areas.mjs",
     "test:web": "node tests/verify-web.mjs",
     "test:local": "node tests/verify-local.mjs",
-    "test": "npm run typecheck && npm run test:draw && npm run test:region && npm run test:china && npm run test:areas && npm run test:collector",
+    "test": "npm run typecheck && npm run test:draw && npm run test:region && npm run test:china && npm run test:areas && npm run test:collector && npm run verify:dataset",
     "test:probe": "node tests/probe-apis.mjs && node tests/probe-round2.mjs && node tests/probe-round3.mjs"
   },
   "dependencies": {

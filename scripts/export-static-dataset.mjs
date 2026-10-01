@@ -157,6 +157,29 @@ function compactDataset(d) {
 }
 
 const compact = compactDataset(dataset);
+
+/**
+ * 安全阀：绝不把已有的大快照覆盖成明显更小的一份。
+ *
+ * 为什么需要（真实事故）：在 CI/新 clone 上 `openDb()` 会**新建空数据库**（不是返回 null），
+ * 于是走的是 fromDatabase() 而不是 fromSeed() 兜底，导出的却是"空库 + 647 条种子"，
+ * 它会安静地覆盖掉仓库里 25820 条的真实快照，线上只剩 671 条。
+ * 宁可在这里报错，也不要静默丢数据。确实需要缩小范围时加 --force。
+ */
+if (fs.existsSync(OUT_FILE) && !process.argv.includes('--force')) {
+  const prevCount = JSON.parse(fs.readFileSync(OUT_FILE, 'utf8')).places?.length ?? 0;
+  const nextCount = compact.places.length;
+  if (prevCount > 0 && nextCount < prevCount) {
+    console.error(
+      `❌ 拒绝导出：本次只有 ${nextCount} 条，会覆盖掉现有的 ${prevCount} 条快照。\n` +
+        '   常见原因：本机没有真实数据库（data/trip.db 被 gitignore / 刚 clone / CI 环境），\n' +
+        '   此时导出的是"空库 + 种子数据"，不是真实采集数据。\n' +
+        '   处理：先确认数据源（node tests/status-report.mjs），确实要缩小范围再加 --force。',
+    );
+    process.exit(1);
+  }
+}
+
 fs.mkdirSync(OUT_DIR, { recursive: true });
 fs.writeFileSync(OUT_FILE, JSON.stringify(compact), 'utf8');
 
